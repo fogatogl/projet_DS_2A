@@ -1,0 +1,36 @@
+[project]
+name = "cadres-lycees"
+version = "0.1.0"
+description = "Lycées et géographie des cadres dans trois aires urbaines de province"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "cartiflette==0.4.0",
+    "esda>=2.10.0",  # indice de Moran (PLAN §5.6), retiré s'il est sacrifié (PLAN §10)
+    "folium>=0.20.0",
+    "fsspec>=2026.9.0",
+    "geopandas>=1.2.0",
+    "jupyter>=1.1.1",  # exécute rapport.ipynb, y compris au rendu Quarto
+    "libpysal>=4.15.0",  # contiguïté de l'indice de Moran, avec esda
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "pandas>=3.0.6",
+    "pillow>=12.3.0",
+    "pyarrow>=26.0.0",  # appelé par pandas et geopandas pour lire et écrire le Parquet
+    "python-calamine>=0.8.3",  # appelé par pandas (engine="calamine") pour les xlsx de l'Insee
+    "requests>=2.34.2",
+    "s3fs>=2026.9.0",
+    "tabulate>=0.10.0",  # appelé par pandas (to_markdown) pour docs/tableau_support.md
+]
+
+[build-system]
+requires = ["uv_build>=0.12,<0.13"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "nb-clean>=4.0.1",
+    "pre-commit>=4.7.0",
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
