@@ -1,0 +1,42 @@
+# Règles de qualité du code. Appliquées par l'éditeur, les hooks Claude Code et le pre-commit.
+# Cette configuration vit ici et non dans pyproject.toml (ruff.toml est prioritaire).
+line-length = 100
+target-version = "py313"
+extend-exclude = ["notebooks/exploration"]
+
+[lint]
+select = [
+    "E", "W", "F",  # erreurs de style et de logique de base (imports ou variables inutilisés…)
+    "I",            # ordre des imports
+    "B",            # bugs probables (arguments mutables par défaut, etc.)
+    "UP",           # syntaxe Python moderne
+    "SIM",          # simplifications
+    "RET",          # retours incohérents
+    "ARG",          # arguments inutilisés
+    "N",            # conventions de nommage
+    "ANN",          # annotations de type (PLAN §8.2)
+    "D",            # docstrings (PLAN §8.2)
+    "BLE",          # except Exception trop large
+    "S110",         # try/except/pass qui avale une erreur
+    "ERA",          # code commenté laissé en place
+    "T20",          # print() oublié dans src/
+    "PD002",        # inplace=True
+    "C90",          # complexité
+]
+ignore = [
+    "D401",  # « mode impératif » : vérification prévue pour l'anglais
+]
+
+[lint.per-file-ignores]
+"tests/**" = ["D", "ANN"]
+"*.ipynb" = ["D", "ANN", "T20", "E402"]
+".claude/**" = ["T20"]
+
+[lint.pydocstyle]
+convention = "numpy"
+
+[lint.mccabe]
+max-complexity = 10
+
+[format]
+docstring-code-format = true

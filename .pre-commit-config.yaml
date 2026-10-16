@@ -1,0 +1,19 @@
+# Hooks locaux lancés avec `uv run` : ils utilisent les versions de uv.lock, comme le reste du projet.
+repos:
+  - repo: local
+    hooks:
+      - id: nb-clean
+        name: nb-clean (retire les sorties des notebooks)
+        entry: uv run nb-clean clean
+        language: system
+        types: [jupyter]
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check
+        language: system
+        types_or: [python, jupyter]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, jupyter]
