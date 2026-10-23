@@ -31,10 +31,18 @@ MIN_VENTES_DVF = 10
 # Délai de `requests` par lecture (pas la durée totale) et essais par URL
 DELAI_TELECHARGEMENT_S = 120
 NB_ESSAIS_TELECHARGEMENT = 3
+# Rentrée la plus récente, voie générale et technologique ; lycées professionnels exclus
+RENTREE_IPS = "2025-2026"
 # Seuil des petites communes (actifs de 25 à 54 ans) et permutations de l'indice de Moran
 ACTIFS_MIN_ROBUSTESSE = 200
+# Charte des figures : bleu et orange pour les secteurs, lisibles en cas de daltonisme
+COULEURS_SECTEURS = {"public": "#2a78d6", "prive": "#eb6834"}
 COULEUR_TEXTE = "#52514e"
+COULEUR_LIAISON = "#c3c2b7"
 COULEUR_GRILLE = "#ececea"
+COULEUR_FOND_RETENUES = "#f0efec"
+DATE_ANNUAIRE = "13/10/2026"
+LIBELLES_SECTEURS = {"public": "public", "prive": "privé sous contrat"}
 # Taille des notes sous les figures, lisible une fois la figure réduite à la colonne
 TAILLE_NOTE_FIGURES = 10.5
 # Une couleur par aire (palette d'Okabe et Ito), distincte des couleurs des secteurs
