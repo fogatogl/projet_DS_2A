@@ -7,6 +7,8 @@ RAYON_PRINCIPAL_KM = 5
 # Anneaux : bornes basses en km (le dernier est ouvert), effectif minimal de chaque groupe d'une
 # cellule et écart maximal des distances moyennes au centre des deux groupes
 ANNEAUX_KM = (0, 5, 10, 20, 30)
+EFFECTIF_MIN_GROUPE = 15
+ECART_DIST_MAX_KM = 2
 CHEMIN_TABLEAU_SUPPORT = Path(__file__).parents[2] / "docs" / "tableau_support.md"
 # Rayons du tableau de support : le principal et le 10 km rapporté à côté
 RAYONS_SUPPORT_KM = (5, 10)
