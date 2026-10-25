@@ -4,6 +4,10 @@ from pathlib import Path
 
 # Lambert 93 (mètres) pour les distances, WGS84 pour les cartes interactives
 CRS_CALCUL = 2154
+CRS_CARTES = 4326
+
+# Rayons d'accessibilité en km : 5 est le principal, 3 et 10 servent en robustesse
+RAYONS_KM = (3, 5, 10)
 RAYON_PRINCIPAL_KM = 5
 
 # Anneaux : bornes basses en km (le dernier est ouvert), effectif minimal de chaque groupe d'une
@@ -97,6 +101,13 @@ ACTIFS_2554_2011 = (
     "C11_POP2554_CS5",
     "C11_POP2554_CS6",
 )
+GEOGRAPHIE_SERIE_CSP = {
+    1999: "CODGEO_2003",
+    2006: "CODGEO_2008",
+    2011: "CODGEO_2013",
+    2016: "CODGEO_2018",
+    2022: "CODGEO_2024",
+}
 # Robustesse : cadres parmi la population de 15 ans ou plus en 2022
 CADRES_15P_2022 = "C22_POP15P_STAT_GSEC13_23"
 POP_15P_2022 = "C22_POP15P"
@@ -213,3 +224,18 @@ LIBELLES_SECTEURS = {"public": "public", "prive": "privé sous contrat"}
 TAILLE_NOTE_FIGURES = 10.5
 # Une couleur par aire (palette d'Okabe et Ito), distincte des couleurs des secteurs
 COULEURS_AIRES = {"Nantes": "#009e73", "Lyon": "#a2559c", "Strasbourg": "#9c6b1f"}
+
+
+# `carte_acces` : bornes supérieures (incluses) des classes de distance ; « 5 km ou moins »
+# équivaut à au moins un lycée privé dans le rayon principal
+BORNES_DISTANCE_KM = (*RAYONS_KM, 20)
+# ColorBrewer « Greens », du plus proche (foncé) au plus loin
+COULEURS_DISTANCE = ("#006d2c", "#31a354", "#74c476", "#bae4b3", "#edf8e9")
+# Simplification des contours pour l'affichage seulement (limites déplacées de 150 m au plus)
+SIMPLIFICATION_CARTE_M = 50
+# Fonds de carte sans clé d'accès, nommés comme dans xyzservices
+FONDS_CARTE = {"Fond gris (Esri)": "Esri.WorldGrayCanvas", "Plan IGN": "GeoportailFrance.plan"}
+
+# Carte IRIS : classes de part de cadres en % (borne basse incluse), ColorBrewer « Purples »
+BORNES_PART_CADRES_IRIS = (10, 20, 30, 40, 50)
+COULEURS_PART_CADRES_IRIS = ("#f2f0f7", "#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f")
