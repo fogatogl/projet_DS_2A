@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+# Lambert 93 (mètres) pour les distances, WGS84 pour les cartes interactives
+CRS_CALCUL = 2154
 RAYON_PRINCIPAL_KM = 5
 
 # Anneaux : bornes basses en km (le dernier est ouvert), effectif minimal de chaque groupe d'une
@@ -103,6 +105,16 @@ POP_15P_2022 = "C22_POP15P"
 NATURES_LYCEES = (300, 301, 302, 306)
 # `code_type_contrat_prive` du privé sous contrat d'association
 CONTRATS_PRIVE_RETENUS = ("30", "31")
+# Lycées de cette robustesse sans coordonnées, écartés nommément ; tout autre fait échouer
+UAI_SANS_POSITION_ROBUSTESSE = (
+    "0443105L",
+    "0313176J",
+    "0581019T",
+    "0783920M",
+    "0212319G",
+    "0756899S",
+    "0756960H",
+)
 # Lycée retenu sans statut public ou privé dans l'annuaire (Eure, loin des aires) : écarté
 UAI_SANS_STATUT = ("0271911F",)
 
@@ -136,6 +148,19 @@ CHEMIN_RAW_IPS = "raw/ips_lycees_20261013.csv"
 NB_LIGNES_IPS = 10905
 # Rentrée la plus récente, voie générale et technologique ; lycées professionnels exclus
 RENTREE_IPS = "2025-2026"
+COLONNE_IPS = "ips_voie_gt"
+TYPES_LYCEES_IPS = ("LEGT", "LPO")
+# Lycées de l'IPS situés dans les 8 aires candidates mais pas retenus (fusionnés sous un autre
+# UAI, hors contrat dans l'annuaire, agricole ou climatique) : à revoir si la rentrée change
+UAI_IPS_NON_RETENUS = (
+    "0352867B",
+    "0380097Z",
+    "0440256P",
+    "0440279P",
+    "0441653H",
+    "0596281G",
+    "0596681S",
+)
 
 # IVAL des lycées généraux et technologiques : export de l'API, copie gelée
 URL_IVAL = (
@@ -145,8 +170,37 @@ URL_IVAL = (
 SHA256_IVAL = "6ab77b391e3405f5157bb942d4548d5f1cfbacd94e76dd52b93db9b370de8658"
 CHEMIN_RAW_IVAL = "raw/ival_lycees_gt_20261020.csv"
 NB_LIGNES_IVAL = 32485
+# Sessions du bac entre les deux recensements et nombre minimal de sessions renseignées
+PREMIERE_SESSION_IVAL = 2012
+DERNIERE_SESSION_IVAL = 2022
+NB_SESSIONS_MIN_IVAL = 5
+# Valeur ajoutée du taux d'accès de la seconde au bac ; taux de réussite et 2012-2025 en robustesse
+INDICATEUR_IVAL = "va_acces_2nde"
 # Seuil des petites communes (actifs de 25 à 54 ans) et permutations de l'indice de Moran
 ACTIFS_MIN_ROBUSTESSE = 200
+# Lycées publiés dans l'IVAL sous un autre UAI que dans l'annuaire -> UAI de l'annuaire
+UAI_IVAL_RATTACHES = {
+    "0440256P": "0443088T",
+    "0440279P": "0443088T",
+    "0441653H": "0443088T",
+    "0332835C": "0332346W",
+    "0690535G": "0690574Z",
+}
+# Lycées de l'IVAL des 8 aires candidates qui ne sont pas des lycées retenus (professionnels,
+# agricole, climatique, hors contrat, absent de l'annuaire)
+UAI_IVAL_NON_RETENUS = (
+    "0330018R",
+    "0380097Z",
+    "0590125R",
+    "0593113N",
+    "0596281G",
+    "0596681S",
+    "0694086S",
+)
+
+# Secteur de l'annuaire, puis de l'IPS -> secteur du projet
+SECTEURS = {"Public": "public", "Privé": "prive"}
+SECTEURS_IPS = {"public": "public", "privé sous contrat": "prive"}
 # Charte des figures : bleu et orange pour les secteurs, lisibles en cas de daltonisme
 COULEURS_SECTEURS = {"public": "#2a78d6", "prive": "#eb6834"}
 COULEUR_TEXTE = "#52514e"
