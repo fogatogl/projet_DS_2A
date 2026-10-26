@@ -49,6 +49,8 @@ URL_ANNUAIRE = (
 )
 CHEMIN_RAW_ANNUAIRE = "raw/annuaire_education_20261013.parquet"
 SHA256_ANNUAIRE = "2c493f152bc8fc682aa8b1f063392015941bcff36bae2ae59a4d1a1e6334e94a"
+COLONNE_VENTES_DVF = "nb_ventes_whole_apt_maison"
+COLONNE_PRIX_DVF = "med_prix_m2_whole_apt_maison"
 # Sous ce nombre de ventes, la médiane du prix d'une commune est manquante
 MIN_VENTES_DVF = 10
 # Délai de `requests` par lecture (pas la durée totale) et essais par URL
@@ -101,6 +103,8 @@ ACTIFS_2554_2011 = (
     "C11_POP2554_CS5",
     "C11_POP2554_CS6",
 )
+CADRES_2554_2022 = "C22_POP2554_STAT_GSEC13_23"
+CADRES_2554_2011 = "C11_POP2554_CS3"
 GEOGRAPHIE_SERIE_CSP = {
     1999: "CODGEO_2003",
     2006: "CODGEO_2008",
@@ -111,6 +115,24 @@ GEOGRAPHIE_SERIE_CSP = {
 # Robustesse : cadres parmi la population de 15 ans ou plus en 2022
 CADRES_15P_2022 = "C22_POP15P_STAT_GSEC13_23"
 POP_15P_2022 = "C22_POP15P"
+ACTIFS_1564_IRIS_2022 = (
+    "C22_ACT1564_STAT_GSEC11_21",
+    "C22_ACT1564_STAT_GSEC12_22",
+    "C22_ACT1564_STAT_GSEC13_23",
+    "C22_ACT1564_STAT_GSEC14_24",
+    "C22_ACT1564_STAT_GSEC15_25",
+    "C22_ACT1564_STAT_GSEC16_26",
+)
+ACTIFS_1564_IRIS_2011 = (
+    "C11_ACT1564_CS1",
+    "C11_ACT1564_CS2",
+    "C11_ACT1564_CS3",
+    "C11_ACT1564_CS4",
+    "C11_ACT1564_CS5",
+    "C11_ACT1564_CS6",
+)
+CADRES_1564_IRIS_2022 = "C22_ACT1564_STAT_GSEC13_23"
+CADRES_1564_IRIS_2011 = "C11_ACT1564_CS3"
 
 # Lycées retenus : `code_nature` 300, 301, 302 et 306 (général, technologique, polyvalent)
 NATURES_LYCEES = (300, 301, 302, 306)

@@ -1,6 +1,7 @@
 """Nettoyage et jointures des sources : lycées (aire, IPS, IVAL), population, part de cadres."""
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 
 from cadres_lycees import config
@@ -160,6 +161,204 @@ def _ajouter_ival(
         "(config.UAI_IVAL_NON_RETENUS)."
     )
     return lycees.merge(ival, left_on="uai", right_index=True, how="left", validate="many_to_one")
+
+
+def population(serie: pd.DataFrame, referentiel: gpd.GeoDataFrame) -> pd.DataFrame:
+    """Renvoie la population 2022 et la densité des communes du référentiel, par `code_commune`.
+
+    `serie` vient de `collecte.serie_historique_rp2022`. `densite` est en habitants par km², avec
+    `SUPERF`, la superficie de l'Insee, et non la surface des contours : même source que la
+    population. `log_densite` est la forme sous laquelle la
+    densité sert de contrôle, tant sa distribution est asymétrique. Les communes sont celles
+    du référentiel, au grain des arrondissements à Lyon : la commune parente 69123 n'est jamais
+    lue, ce qui évite de compter Lyon deux fois. Le résultat se joint par `code_commune`.
+    """
+    pop_superficie = _lignes_du_referentiel(serie, referentiel, ["P22_POP", "SUPERF"])
+    assert pop_superficie.notna().all().all(), "Population ou superficie manquante."
+    assert (pop_superficie["SUPERF"] > 0).all(), "Superficie nulle ou négative."
+    # Une commune sans habitant aurait une densité nulle, et un logarithme infini
+    assert (pop_superficie["P22_POP"] > 0).all(), "Commune sans habitant."
+
+    densite = pop_superficie["P22_POP"] / pop_superficie["SUPERF"]
+    return pd.DataFrame(
+        {"pop_2022": pop_superficie["P22_POP"], "densite": densite, "log_densite": np.log(densite)}
+    )
+
+
+def part_cadres(effectifs: pd.DataFrame, referentiel: gpd.GeoDataFrame) -> pd.DataFrame:
+    """Renvoie la part de cadres parmi les actifs de 25 à 54 ans en 2011 et en 2022.
+
+    `effectifs` vient de `collecte.evol_struct_rp2022`. La part est le groupe 3 (cadres et
+    professions intellectuelles supérieures) divisé par la somme des 6 groupes, c'est-à-dire les
+    actifs occupés et les chômeurs ayant déjà travaillé : une fraction entre 0
+    et 1. `evol_cadres_pts` est la part de 2022 moins celle de 2011, en points de pourcentage.
+    `actifs_2022` sert de poids ; le seuil de 200 actifs de H3 se lit sur le plus petit de
+    `actifs_2011` et `actifs_2022`. `part_cadres_15p_2022`, les cadres parmi la population
+    de 15 ans ou plus en 2022, sert à la robustesse. Lyon est lue au grain de ses
+    arrondissements, comme dans `population`. Aucune commune des aires retenues n'est sans actif
+    à une date : une telle commune fait échouer. Le résultat se joint par `code_commune`.
+    """
+    colonnes = [
+        *config.ACTIFS_2554_2011,
+        *config.ACTIFS_2554_2022,
+        config.CADRES_15P_2022,
+        config.POP_15P_2022,
+    ]
+    actifs = _lignes_du_referentiel(effectifs, referentiel, colonnes)
+    assert actifs.notna().all().all(), "Effectif d'actifs de 25 à 54 ans manquant."
+    actifs_2011 = actifs[list(config.ACTIFS_2554_2011)].sum(axis=1)
+    actifs_2022 = actifs[list(config.ACTIFS_2554_2022)].sum(axis=1)
+    sans_actif = sorted(actifs.index[(actifs_2011 <= 0) | (actifs_2022 <= 0)])
+    assert not sans_actif, (
+        f"Communes sans actif de 25 à 54 ans en 2011 ou 2022, à nommer dans config : {sans_actif}"
+    )
+
+    part_2011 = actifs[config.CADRES_2554_2011] / actifs_2011
+    part_2022 = actifs[config.CADRES_2554_2022] / actifs_2022
+    assert (actifs[config.POP_15P_2022] > 0).all(), "Commune sans habitant de 15 ans ou plus."
+    part_15p_2022 = actifs[config.CADRES_15P_2022] / actifs[config.POP_15P_2022]
+    # Le numérateur est une partie du dénominateur : hors de [0, 1], un effectif est négatif
+    parts = (part_2011, part_2022, part_15p_2022)
+    assert all(part.between(0, 1).all() for part in parts), "Part de cadres hors de [0, 1]."
+    return pd.DataFrame(
+        {
+            "part_cadres_2011": part_2011,
+            "part_cadres_2022": part_2022,
+            "evol_cadres_pts": (part_2022 - part_2011) * 100,
+            "actifs_2011": actifs_2011,
+            "actifs_2022": actifs_2022,
+            "part_cadres_15p_2022": part_15p_2022,
+        }
+    )
+
+
+def prix_m2(dvf: pd.DataFrame, referentiel: gpd.GeoDataFrame) -> pd.DataFrame:
+    """Renvoie le prix médian au m² de chaque commune, et son logarithme (robustesse).
+
+    `dvf` vient de `collecte.statistiques_dvf`. `prix_m2_med` est manquant sous
+    `config.MIN_VENTES_DVF` ventes (appartements et maisons), et pour toute l'Alsace-Moselle,
+    absente de DVF. `log_prix_m2` sert de contrôle, comme `log_densite`. Indexé par
+    `code_commune` ; toute commune du référentiel doit être dans le fichier.
+    """
+    par_code = dvf.set_index("code_geo")
+    manquantes = sorted(set(referentiel["code_commune"]) - set(par_code.index))
+    assert not manquantes, f"Communes absentes des statistiques DVF : {manquantes[:10]}."
+    lignes = par_code.loc[referentiel["code_commune"]]
+    assez_de_ventes = lignes[config.COLONNE_VENTES_DVF] >= config.MIN_VENTES_DVF
+    prix = lignes[config.COLONNE_PRIX_DVF].where(assez_de_ventes)
+    assert (prix.dropna() > 0).all(), "Prix au m² nul ou négatif."
+    return pd.DataFrame({"prix_m2_med": prix, "log_prix_m2": np.log(prix)}).rename_axis(
+        "code_commune"
+    )
+
+
+def parts_cadres_dates(
+    series: dict[int, pd.DataFrame], passage: pd.DataFrame, referentiel: gpd.GeoDataFrame
+) -> pd.DataFrame:
+    """Renvoie la part de cadres de 25 à 54 ans de chaque commune à plusieurs recensements.
+
+    `series` associe chaque année de `config.GEOGRAPHIE_SERIE_CSP` à la sortie de
+    `collecte.serie_csp_2554`, `passage` vient de `collecte.passage_communes`. Chaque date est
+    ramenée au COG 2025 en sommant les communes de sa géographie qui forment aujourd'hui une même
+    commune (fusions). Lyon reste entière (69123) : la série n'a pas ses arrondissements. Une
+    ligne par `code_parent` du référentiel ; colonnes `part_cadres_<année>` (fraction) et
+    `actifs_<année>`.
+    """
+    unites = pd.Index(referentiel["code_parent"].unique(), name="code_commune")
+    resultat = pd.DataFrame(index=unites)
+    for annee, effectifs in series.items():
+        colonne = config.GEOGRAPHIE_SERIE_CSP[annee]
+        filiations = passage[[colonne, "CODGEO_2025"]].dropna().drop_duplicates()
+        vers_les_unites = filiations[filiations["CODGEO_2025"].isin(unites)]
+        # Une commune scindée depuis répartirait ses actifs entre deux communes : il n'y en a
+        # pas dans les aires retenues, et le code le vérifie
+        scindees = vers_les_unites[colonne][vers_les_unites[colonne].duplicated()].tolist()
+        assert not scindees, f"Communes scindées depuis {annee} : {scindees}."
+        jointes = effectifs.merge(
+            vers_les_unites, left_on="code_commune", right_on=colonne, validate="one_to_one"
+        )
+        sommes = jointes.groupby("CODGEO_2025")[["cadres", "actifs"]].sum()
+        manquantes = sorted(set(unites) - set(sommes.index))
+        assert not manquantes, f"Communes sans effectifs en {annee} : {manquantes}."
+        assert (sommes["actifs"] > 0).all(), f"Commune sans actif en {annee}."
+        resultat[f"part_cadres_{annee}"] = sommes["cadres"] / sommes["actifs"]
+        resultat[f"actifs_{annee}"] = sommes["actifs"]
+    return resultat
+
+
+def _lignes_du_referentiel(
+    fichier_insee: pd.DataFrame, referentiel: gpd.GeoDataFrame, colonnes: list[str]
+) -> pd.DataFrame:
+    """Renvoie `colonnes` d'un fichier communal de l'Insee pour les communes du référentiel.
+
+    `fichier_insee` a une colonne `CODGEO` ; le résultat est indexé par `code_commune`. Une
+    commune du référentiel absente du fichier fait échouer, en nommant les colonnes cherchées.
+    """
+    fichier_insee = fichier_insee.set_index("CODGEO")
+    manquantes = sorted(set(referentiel["code_commune"]) - set(fichier_insee.index))
+    assert not manquantes, f"Communes absentes du fichier de {colonnes} : {manquantes}"
+    return fichier_insee.loc[referentiel["code_commune"], colonnes].rename_axis("code_commune")
+
+
+def part_cadres_iris(
+    activite_2011: pd.DataFrame, activite_2022: pd.DataFrame, passage: pd.DataFrame
+) -> pd.DataFrame:
+    """Renvoie la part de cadres parmi les actifs de 15 à 64 ans par IRIS, en 2011 et en 2022.
+
+    Une ligne par IRIS de 2022 (index `iris`, codes de la géographie 2024). La part est le groupe
+    3 sur la somme des 6 groupes, comme pour la commune, mais sur les 15-64 ans, seule
+    tranche que les bases IRIS croisent avec la CSP. Elle manque sans actif (IRIS d'activité ou de
+    loisirs, ce qui n'est pas une erreur, contrairement à une commune sans actif), et en 2011
+    si le code n'existait pas. `comparable` est vrai si l'IRIS a le même code et une part aux
+    deux dates, sauf l'IRIS unique (commune + 0000) d'une commune non découpée qui en a absorbé
+    une autre entre les géographies 2013 et 2024 : il garde son code, mais pas son territoire
+    Les arguments viennent de `collecte.activite_iris_2011`, `collecte.activite_iris_2022`
+    et `collecte.passage_communes`.
+    """
+    actifs_2011, part_2011 = _actifs_et_part(
+        activite_2011, config.ACTIFS_1564_IRIS_2011, config.CADRES_1564_IRIS_2011
+    )
+    actifs_2022, part_2022 = _actifs_et_part(
+        activite_2022, config.ACTIFS_1564_IRIS_2022, config.CADRES_1564_IRIS_2022
+    )
+    # Les IRIS de 2022 font l'index ; un IRIS sans code en 2011 y a des valeurs manquantes
+    parts = pd.DataFrame(
+        {
+            "actifs_1564_2011": actifs_2011,
+            "part_cadres_1564_2011": part_2011,
+            "actifs_1564_2022": actifs_2022,
+            "part_cadres_1564_2022": part_2022,
+        },
+        index=actifs_2022.index,
+    ).rename_axis("iris")
+
+    # Une filiation à case vide (commune créée ou disparue) ne dit rien d'une fusion entre 2013
+    # et 2024 ; une commune peut avoir plusieurs lignes, d'où les paires uniques
+    filiations = passage[["CODGEO_2013", "CODGEO_2024"]].dropna().drop_duplicates()
+    communes_2013 = filiations.groupby("CODGEO_2024")["CODGEO_2013"].nunique()
+    fusionnees = communes_2013.index[communes_2013 > 1]
+    # Dans une commune découpée, le territoire absorbé reçoit de nouveaux codes, déjà écartés
+    # parce qu'absents en 2011 : seul l'IRIS unique d'une commune non découpée change en gardant
+    # son code
+    commune = activite_2022.set_index("IRIS")["COM"]
+    iris_unique = parts.index.str.endswith("0000")
+    agrandi = commune.isin(fusionnees).to_numpy() & iris_unique
+    meme_code = parts.index.isin(actifs_2011.index)
+    # Un IRIS sans actif à une date n'a pas de part à comparer
+    deux_parts = parts[["part_cadres_1564_2011", "part_cadres_1564_2022"]].notna().all(axis=1)
+    parts["comparable"] = meme_code & ~agrandi & deux_parts
+    return parts
+
+
+def _actifs_et_part(
+    activite: pd.DataFrame, groupes: tuple[str, ...], cadres: str
+) -> tuple[pd.Series, pd.Series]:
+    """Renvoie, par IRIS, les actifs (somme des 6 groupes) et la part de cadres parmi eux."""
+    effectifs = activite.set_index("IRIS")[list(groupes)]
+    actifs = effectifs.sum(axis=1)
+    part = (effectifs[cadres] / actifs).where(actifs > 0)
+    assert part.dropna().between(0, 1).all(), "Part de cadres hors de [0, 1]."
+    return actifs, part
 
 
 def ival_par_lycee(
