@@ -15,6 +15,23 @@ RAYON_PRINCIPAL_KM = 5
 ANNEAUX_KM = (0, 5, 10, 20, 30)
 EFFECTIF_MIN_GROUPE = 15
 ECART_DIST_MAX_KM = 2
+
+# Paires contiguës : écarts de contrôle, tirages du bootstrap et graine (mêmes tirages partout)
+CONTROLES_PAIRES = ("d_dist_centre_km", "d_log_densite")
+NB_TIRAGES_BOOTSTRAP = 1000
+GRAINE_BOOTSTRAP = 20261021
+# Classes du nuage de `fig_paires` : environ 30 paires symétrisées par classe à Nantes
+NB_CLASSES_NUAGE_PAIRES = 20
+
+# H4 : variable de chaque mesure d'accès et son sens ; -1 retourne les distances pour qu'une
+# pente positive dise toujours « plus d'accès, plus de cadres »
+MESURES_H4 = {
+    "Lycée privé sous contrat": ("dist_lyc_prive_min", -1),
+    "Gare de voyageurs": ("dist_gare_min", -1),
+    "Médecins généralistes (APL)": ("apl_mg", 1),
+    "Installations sportives": ("log_n_sport_5km", 1),
+    "Équipements culturels": ("log_n_culture_5km", 1),
+}
 CHEMIN_TABLEAU_SUPPORT = Path(__file__).parents[2] / "docs" / "tableau_support.md"
 # Rayons du tableau de support : le principal et le 10 km rapporté à côté
 RAYONS_SUPPORT_KM = (5, 10)
@@ -305,6 +322,8 @@ DERNIERE_SESSION_IVAL = 2022
 NB_SESSIONS_MIN_IVAL = 5
 # Valeur ajoutée du taux d'accès de la seconde au bac ; taux de réussite et 2012-2025 en robustesse
 INDICATEUR_IVAL = "va_acces_2nde"
+# Au-delà de 5 % de tirages écartés (rang incomplet), l'intervalle n'est pas rapporté
+MAX_TIRAGES_ECARTES = 50
 # Seuil des petites communes (actifs de 25 à 54 ans) et permutations de l'indice de Moran
 ACTIFS_MIN_ROBUSTESSE = 200
 # Lycées publiés dans l'IVAL sous un autre UAI que dans l'annuaire -> UAI de l'annuaire
