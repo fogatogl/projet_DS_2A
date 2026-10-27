@@ -49,8 +49,64 @@ URL_ANNUAIRE = (
 )
 CHEMIN_RAW_ANNUAIRE = "raw/annuaire_education_20261013.parquet"
 SHA256_ANNUAIRE = "2c493f152bc8fc682aa8b1f063392015941bcff36bae2ae59a4d1a1e6334e94a"
+
+# Gares de voyageurs de SNCF Gares & Connexions (H4), retraitées chaque jour : copie gelée
+URL_GARES = (
+    "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/"
+    "gares-de-voyageurs/exports/parquet"
+)
+CHEMIN_RAW_GARES = "raw/gares_voyageurs_20261103.parquet"
+SHA256_GARES = "61ccf3392b01cb6785268be7152337f1a95dda93fa9eadf9134901b5f366bc44"
+
+# APL aux médecins généralistes de la DREES (H4) : chaque mise à jour retire des millésimes.
+# Feuille 2024, au grain du projet ; en-tête à la ligne 8 (base 0), unités juste dessous
+URL_APL = (
+    "https://data.drees.solidarites-sante.gouv.fr/api/explore/v2.1/catalog/datasets/"
+    "530_l-accessibilite-potentielle-localisee-apl/attachments/"
+    "indicateur_d_apl_aux_medecins_generalistes_xlsx"
+)
+CHEMIN_RAW_APL = "raw/apl_medecins_generalistes_20261103.xlsx"
+SHA256_APL = "21c73deff57dc7a83a3cd6fcfd5b5ceb8c7a40e98590a50b5b1194f2dd4d75a2"
+FEUILLE_APL = "APL 2024"
+LIGNE_ENTETE_APL = 8
+COLONNE_CODE_APL = "Code commune INSEE"
+COLONNE_APL = "APL aux médecins généralistes"
+
+# Équipements sportifs, Data ES du ministère des Sports (H4), mis à jour chaque jour
+URL_EQUIPEMENTS_SPORTIFS = (
+    "https://equipements.sports.gouv.fr/api/explore/v2.1/catalog/datasets/data-es/exports/parquet"
+)
+CHEMIN_RAW_EQUIPEMENTS_SPORTIFS = "raw/equipements_sportifs_20261103.parquet"
+SHA256_EQUIPEMENTS_SPORTIFS = "c78cb234bb591f54660277c5720e5a8275ec26ffacf7120b141024cfba936eef"
+
+# Équipements culturels de la BPE 2025 (H4) : sous-domaine F3, coordonnées en Lambert 93 en
+# métropole ; fichier actualisé chaque mois, d'où la copie gelée
+URL_BPE = "https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.parquet"
+CHEMIN_RAW_BPE = "raw/bpe_2025_20261103.parquet"
+SHA256_BPE = "3bad0dc8b02eff0bee86832acf97fdeccef02116bbeb8a6dca2ad0e99d054f6a"
+SOUS_DOMAINE_CULTURE_BPE = "F3"
+EPSG_BPE_METROPOLE = "2154"
+# Statistiques DVF d'Etalab (robustesse au prix) : fichier réécrit sans prévenir, copie gelée
+URL_DVF = "https://data-pipeline-open.s3.sbg.io.cloud.ovh.net/dvf/stats_whole_period.csv"
+CHEMIN_RAW_DVF = "raw/statistiques_dvf_20261103.csv"
+SHA256_DVF = "eca12b1b1b45274e315859135d5f4ac15137f3e084712ea9b614b11c4a100722"
 COLONNE_VENTES_DVF = "nb_ventes_whole_apt_maison"
 COLONNE_PRIX_DVF = "med_prix_m2_whole_apt_maison"
+# Chefs-lieux (mairies) d'ADMIN EXPRESS COG 2025, lus par le WFS de l'IGN (robustesse)
+URL_CHEFS_LIEUX = (
+    "https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature"
+    "&outputFormat=application/json&srsName=EPSG:2154&TYPENAMES={couche}"
+    "&count={nombre}&startIndex={debut}"
+)
+COUCHES_CHEFS_LIEUX = {
+    "ADMINEXPRESS-COG.2025:chef_lieu_de_commune": "code_insee_de_la_commune",
+    "ADMINEXPRESS-COG.2025:chef_lieu_d_arrondissement_municipal": (
+        "code_insee_de_l_arrondissement_municipal"
+    ),
+}
+TAILLE_PAGE_WFS = 5000
+CHEMIN_RAW_CHEFS_LIEUX = "raw/chefs_lieux_cog2025_20261103.parquet"
+SHA256_CHEFS_LIEUX = "a43f55f677f463f10bb9487007426874fddf14a127a3e48021e787753e9849f6"
 # Sous ce nombre de ventes, la médiane du prix d'une commune est manquante
 MIN_VENTES_DVF = 10
 # Délai de `requests` par lecture (pas la durée totale) et essais par URL
@@ -105,6 +161,12 @@ ACTIFS_2554_2011 = (
 )
 CADRES_2554_2022 = "C22_POP2554_STAT_GSEC13_23"
 CADRES_2554_2011 = "C11_POP2554_CS3"
+# Série historique des actifs de 25 à 54 ans par CSP : date -> géographie de sa feuille
+URL_SERIE_CSP = "https://www.insee.fr/fr/statistiques/fichier/1893185/pop-act2554-csp-cd-6822.zip"
+CHEMIN_RAW_SERIE_CSP = "raw/pop-act2554-csp-cd-6822.zip"
+SHA256_SERIE_CSP = "cdbcb350a9c1315135471fc7f40e60e578428735eb6b1f8756ec26da82d4e168"
+XLSX_SERIE_CSP = "pop-act2554-csp-cd-6822.xlsx"
+ENTETE_SERIE_CSP = 15
 GEOGRAPHIE_SERIE_CSP = {
     1999: "CODGEO_2003",
     2006: "CODGEO_2008",
@@ -115,6 +177,23 @@ GEOGRAPHIE_SERIE_CSP = {
 # Robustesse : cadres parmi la population de 15 ans ou plus en 2022
 CADRES_15P_2022 = "C22_POP15P_STAT_GSEC13_23"
 POP_15P_2022 = "C22_POP15P"
+# Bases IRIS « Activité des résidents » : seuls les 15-64 ans y croisent la CSP
+URL_ACTIVITE_IRIS_2022 = (
+    "https://www.insee.fr/fr/statistiques/fichier/8647006/base-ic-activite-residents-2022_csv.zip"
+)
+SHA256_ACTIVITE_IRIS_2022 = "f4aefb7fab425b9f7eb802e2afb475908bbf2186e0d88f542cf7a67fc70623cb"
+CHEMIN_RAW_ACTIVITE_IRIS_2022 = "raw/base-ic-activite-residents-2022_csv.zip"
+CSV_ACTIVITE_IRIS_2022 = "base-ic-activite-residents-2022.CSV"
+NB_LIGNES_ACTIVITE_IRIS_2022 = 49276
+URL_ACTIVITE_IRIS_2011 = (
+    "https://www.insee.fr/fr/statistiques/fichier/2028668/infra-activite-resident-2011.zip"
+)
+SHA256_ACTIVITE_IRIS_2011 = "05076a23c7a3e6bab7aadae8e1b12c17ed1a2aff395340edd59df1474719e7ea"
+CHEMIN_RAW_ACTIVITE_IRIS_2011 = "raw/infra-activite-resident-2011.zip"
+XLS_ACTIVITE_IRIS_2011 = "base-ic-activite-residents-2011.xls"
+FEUILLE_ACTIVITE_IRIS_2011 = "IRIS"
+ENTETE_ACTIVITE_IRIS_2011 = 5
+NB_LIGNES_ACTIVITE_IRIS_2011 = 50867
 ACTIFS_1564_IRIS_2022 = (
     "C22_ACT1564_STAT_GSEC11_21",
     "C22_ACT1564_STAT_GSEC12_22",
@@ -133,6 +212,23 @@ ACTIFS_1564_IRIS_2011 = (
 )
 CADRES_1564_IRIS_2022 = "C22_ACT1564_STAT_GSEC13_23"
 CADRES_1564_IRIS_2011 = "C11_ACT1564_CS3"
+# Contours des IRIS des aires retenues (cartiflette, COG 2025), copies gelées
+CHEMIN_RAW_CONTOURS_IRIS = "raw/contours_iris_{aav}_20261021.parquet"
+SHA256_CONTOURS_IRIS = {
+    "008": "61e52233fcdd7fe09d0f0350b6a5060719ca83f0a56c7710848a5ae35d34ff23",
+    "002": "5c77cb03f2cfb55e3e2634218f4f94b6b43f13ed1496e85572919dc271b43018",
+    "010": "15b57329479d4261de4a443b9b4458332f92692b286caecbb270a3b678aad82c",
+}
+# Table de passage des codes communes 2025 : repère les fusions entre 2013 et 2024
+URL_PASSAGE_COG = (
+    "https://www.insee.fr/fr/statistiques/fichier/7671867/table_passage_annuelle_2025.zip"
+)
+SHA256_PASSAGE_COG = "803527a040748f4c7dc5e97777cb5838e8b7d4cc36d0b182f53a83e9787d595b"
+CHEMIN_RAW_PASSAGE_COG = "raw/table_passage_annuelle_2025.zip"
+XLSX_PASSAGE_COG = "table_passage_annuelle_2025.xlsx"
+FEUILLE_PASSAGE_COG = "COM"
+ENTETE_PASSAGE_COG = 5
+NB_LIGNES_PASSAGE_COG = 36760
 
 # Lycées retenus : `code_nature` 300, 301, 302 et 306 (général, technologique, polyvalent)
 NATURES_LYCEES = (300, 301, 302, 306)

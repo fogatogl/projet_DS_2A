@@ -32,6 +32,95 @@ def geler_annuaire(chemin: str) -> str:
     return _geler(config.URL_ANNUAIRE, chemin, _parquet_complet)
 
 
+def geler_gares(chemin: str) -> str:
+    """Écrit à `chemin` l'export complet des gares de voyageurs et renvoie son sha256.
+
+    Le rapport lit la copie gelée (`gares`). Mode d'emploi
+    dans le README.
+    """
+    return _geler(config.URL_GARES, chemin, _parquet_complet)
+
+
+def geler_apl(chemin: str) -> str:
+    """Écrit à `chemin` le fichier de l'APL aux médecins généralistes et renvoie son sha256.
+
+    Le rapport lit la copie gelée (`apl_medecins`).
+    """
+    return _geler(config.URL_APL, chemin, _xlsx_complet)
+
+
+def geler_equipements_sportifs(chemin: str) -> str:
+    """Écrit à `chemin` l'export complet de Data ES et renvoie son sha256.
+
+    Le rapport lit la copie gelée (`equipements_sportifs`).
+    Le serveur peut répondre 200 avec un flux tronqué par une erreur : `_parquet_complet` le
+    refuse.
+    """
+    return _geler(config.URL_EQUIPEMENTS_SPORTIFS, chemin, _parquet_complet)
+
+
+def geler_bpe(chemin: str) -> str:
+    """Écrit à `chemin` le fichier détail de la BPE 2025 et renvoie son sha256.
+
+    Le rapport lit la copie gelée (`equipements_culturels`).
+    """
+    return _geler(config.URL_BPE, chemin, _parquet_complet)
+
+
+def geler_dvf(chemin: str) -> str:
+    """Écrit à `chemin` les statistiques DVF d'Etalab par commune et renvoie son sha256.
+
+    Le rapport lit la copie gelée (`statistiques_dvf`).
+    """
+    return _geler(config.URL_DVF, chemin, _csv_complet)
+
+
+def geler_chefs_lieux(chemin: str) -> str:
+    """Écrit à `chemin` le point du chef-lieu de chaque commune et arrondissement, et son sha256.
+
+    Lit page par page les couches WFS de `config.COUCHES_CHEFS_LIEUX` (IGN, ADMIN EXPRESS COG
+    2025) et en fait un Parquet à deux colonnes, `code_commune` et `geometry` (Lambert 93).
+    Le rapport lit la copie gelée (`chefs_lieux`).
+    """
+    assert not stockage.existe(chemin), f"{chemin} existe déjà : choisir un autre chemin daté."
+    morceaux = []
+    for couche, colonne_code in config.COUCHES_CHEFS_LIEUX.items():
+        debut, attendus = 0, None
+        while attendus is None or debut < attendus:
+            url = config.URL_CHEFS_LIEUX.format(
+                couche=couche, nombre=config.TAILLE_PAGE_WFS, debut=debut
+            )
+            reponse = requests.get(url, timeout=config.DELAI_TELECHARGEMENT_S)
+            reponse.raise_for_status()
+            page = reponse.json()
+            attendus = page["numberMatched"]
+            points = gpd.GeoDataFrame.from_features(page["features"], crs=config.CRS_CALCUL)
+            morceaux.append(
+                points[[colonne_code, "geometry"]].rename(columns={colonne_code: "code_commune"})
+            )
+            debut += config.TAILLE_PAGE_WFS
+    chefs_lieux = pd.concat(morceaux, ignore_index=True).sort_values("code_commune")
+    # Sans ordre imposé au service, une page pourrait répéter ou sauter une entité
+    assert chefs_lieux["code_commune"].is_unique, "Chef-lieu en double dans le WFS de l'IGN."
+    contenu = io.BytesIO()
+    gpd.GeoDataFrame(chefs_lieux, crs=config.CRS_CALCUL).to_parquet(contenu, index=False)
+    stockage.ecrire_octets(contenu.getvalue(), chemin)
+    return hashlib.sha256(contenu.getvalue()).hexdigest()
+
+
+def chefs_lieux() -> gpd.GeoDataFrame:
+    """Renvoie le point du chef-lieu de chaque commune et arrondissement (IGN, COG 2025).
+
+    Colonnes `code_commune` et `geometry` (Lambert 93). Lu dans la copie gelée.
+    """
+    contenu = stockage.copie_controlee(
+        _copies_publiques(config.CHEMIN_RAW_CHEFS_LIEUX),
+        config.CHEMIN_RAW_CHEFS_LIEUX,
+        config.SHA256_CHEFS_LIEUX,
+    )
+    return gpd.read_parquet(io.BytesIO(contenu))
+
+
 def _geler(url: str, chemin: str, est_complet: Callable[[bytes], bool]) -> str:
     """Écrit à `chemin` le fichier téléchargé à `url` et renvoie son sha256.
 
@@ -258,6 +347,143 @@ def contours_aire(code_aav: str) -> gpd.GeoDataFrame:
     return gpd.read_parquet(io.BytesIO(contenu))
 
 
+def contours_iris(code_aav: str) -> gpd.GeoDataFrame:
+    """Renvoie les contours des IRIS d'une aire d'attraction, en WGS84 (COG 2025).
+
+    `CODE_IRIS` identifie l'IRIS ; à Lyon, `INSEE_COM` vaut 69123 et `INSEE_COG` l'arrondissement.
+    Lu dans la copie gelée.
+    """
+    chemin = config.CHEMIN_RAW_CONTOURS_IRIS.format(aav=code_aav)
+    contenu = stockage.copie_controlee(
+        _copies_publiques(chemin), chemin, config.SHA256_CONTOURS_IRIS[code_aav]
+    )
+    return gpd.read_parquet(io.BytesIO(contenu))
+
+
+def activite_iris_2022() -> pd.DataFrame:
+    """Renvoie les actifs de 15 à 64 ans par groupe socioprofessionnel et par IRIS, en 2022.
+
+    Colonnes `IRIS`, `COM` et celles de `config.ACTIFS_1564_IRIS_2022`, en IRIS et COG 2024.
+    Effectifs décimaux (exploitation complémentaire). À Lyon, `COM` donne l'arrondissement.
+    """
+    contenu = stockage.copie_controlee(
+        [config.URL_ACTIVITE_IRIS_2022],
+        config.CHEMIN_RAW_ACTIVITE_IRIS_2022,
+        config.SHA256_ACTIVITE_IRIS_2022,
+    )
+    with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
+        csv = io.BytesIO(archive.read(config.CSV_ACTIVITE_IRIS_2022))
+    colonnes = ["IRIS", "COM", *config.ACTIFS_1564_IRIS_2022]
+    # Lus en nombre, les codes perdraient leur zéro initial
+    activite = pd.read_csv(csv, sep=";", usecols=colonnes, dtype={"IRIS": str, "COM": str})
+    assert len(activite) == config.NB_LIGNES_ACTIVITE_IRIS_2022, (
+        f"{len(activite)} IRIS en 2022, {config.NB_LIGNES_ACTIVITE_IRIS_2022} attendus."
+    )
+    assert activite["IRIS"].is_unique, "Codes IRIS en double en 2022."
+    return activite
+
+
+def activite_iris_2011() -> pd.DataFrame:
+    """Renvoie les actifs de 15 à 64 ans par groupe socioprofessionnel et par IRIS, en 2011.
+
+    Colonnes `IRIS` et celles de `config.ACTIFS_1564_IRIS_2011`, en géographie 2013. Le fichier
+    n'existe qu'en xls : il est lu avec calamine, tout en texte pour garder les zéros initiaux des
+    codes, puis les effectifs sont convertis en nombres.
+    """
+    contenu = stockage.copie_controlee(
+        [config.URL_ACTIVITE_IRIS_2011],
+        config.CHEMIN_RAW_ACTIVITE_IRIS_2011,
+        config.SHA256_ACTIVITE_IRIS_2011,
+    )
+    with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
+        xls = io.BytesIO(archive.read(config.XLS_ACTIVITE_IRIS_2011))
+    feuille = pd.read_excel(
+        xls,
+        sheet_name=config.FEUILLE_ACTIVITE_IRIS_2011,
+        header=config.ENTETE_ACTIVITE_IRIS_2011,
+        dtype=str,
+        engine="calamine",
+    )
+    activite = feuille[["IRIS", *config.ACTIFS_1564_IRIS_2011]].copy()
+    groupes = list(config.ACTIFS_1564_IRIS_2011)
+    # Une valeur non numérique fait échouer la conversion
+    activite[groupes] = activite[groupes].astype(float)
+    assert len(activite) == config.NB_LIGNES_ACTIVITE_IRIS_2011, (
+        f"{len(activite)} IRIS en 2011, {config.NB_LIGNES_ACTIVITE_IRIS_2011} attendus."
+    )
+    assert activite["IRIS"].is_unique, "Codes IRIS en double en 2011."
+    return activite
+
+
+def passage_communes() -> pd.DataFrame:
+    """Renvoie la table de passage annuelle des codes communes 2025 : une ligne par filiation.
+
+    Colonnes `CODGEO_<année>` des géographies dont le projet a besoin, de 2003 à 2025 (une case
+    vide : la commune n'existait pas). Une commune peut avoir plusieurs lignes : réduire aux
+    paires uniques des colonnes utiles avant de compter.
+    """
+    contenu = stockage.copie_controlee(
+        [config.URL_PASSAGE_COG], config.CHEMIN_RAW_PASSAGE_COG, config.SHA256_PASSAGE_COG
+    )
+    with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
+        xlsx = io.BytesIO(archive.read(config.XLSX_PASSAGE_COG))
+    table = pd.read_excel(
+        xlsx,
+        sheet_name=config.FEUILLE_PASSAGE_COG,
+        header=config.ENTETE_PASSAGE_COG,
+        dtype=str,
+        engine="calamine",
+    )
+    assert len(table) == config.NB_LIGNES_PASSAGE_COG, (
+        f"{len(table)} lignes dans la table de passage, {config.NB_LIGNES_PASSAGE_COG} attendues."
+    )
+    geographies = sorted({*config.GEOGRAPHIE_SERIE_CSP.values(), "CODGEO_2025"})
+    return table[geographies]
+
+
+def serie_csp_2554(annee: int) -> pd.DataFrame:
+    """Renvoie les actifs de 25 à 54 ans par CSP de chaque commune au recensement `annee`.
+
+    Série historique de l'Insee (source 1), feuille `COM_<annee>`, dans la géographie de cette
+    date (`config.GEOGRAPHIE_SERIE_CSP`). Colonnes : `code_commune`, `cadres` (groupe 3, en
+    emploi et chômeurs) et `actifs` (somme des 6 groupes, en emploi et chômeurs). Une ligne
+    vide est une commune qui n'existait pas à cette date : elle est retirée. Le zip de l'Insee
+    est permanent : il est lu à son URL d'origine.
+    """
+    contenu = stockage.copie_controlee(
+        [config.URL_SERIE_CSP], config.CHEMIN_RAW_SERIE_CSP, config.SHA256_SERIE_CSP
+    )
+    with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
+        classeur = io.BytesIO(archive.read(config.XLSX_SERIE_CSP))
+    feuille = pd.read_excel(
+        classeur,
+        sheet_name=f"COM_{annee}",
+        header=config.ENTETE_SERIE_CSP,
+        dtype=str,
+        engine="calamine",
+    )
+    # Les noms portent l'année : groupe {1..6} × position {1 : en emploi, 2 : chômeur}
+    colonnes = {
+        (groupe, position): f"csx_rec{groupe}taxtypac_rec{position}rpop{annee}"
+        for groupe in range(1, 7)
+        for position in (1, 2)
+    }
+    valeurs = feuille[list(colonnes.values())].astype(float)
+    renseignee = valeurs.notna().all(axis=1)
+    assert (renseignee | valeurs.isna().all(axis=1)).all(), "Ligne en partie vide dans la série."
+    # Code commune : département sur 2 caractères (Corse 2A, 2B), puis code dans le département
+    code = feuille["DR"].str[:2] + feuille["CR"]
+    effectifs = pd.DataFrame(
+        {
+            "code_commune": code,
+            "cadres": valeurs[colonnes[(3, 1)]] + valeurs[colonnes[(3, 2)]],
+            "actifs": valeurs.sum(axis=1),
+        }
+    )[renseignee]
+    assert effectifs["code_commune"].is_unique, f"Code commune en double dans COM_{annee}."
+    return effectifs.reset_index(drop=True)
+
+
 def contours_departements() -> gpd.GeoDataFrame:
     """Renvoie les contours des départements, DOM compris, en WGS84 (COG 2025).
 
@@ -288,3 +514,144 @@ def ips_lycees() -> pd.DataFrame:
     )
     assert not ips.duplicated(["uai", "rentree_scolaire"]).any(), "Lycée en double dans l'IPS."
     return ips
+
+
+def gares() -> gpd.GeoDataFrame:
+    """Renvoie les gares de voyageurs de SNCF Gares & Connexions, en Lambert 93 (H4).
+
+    Une ligne par gare (`id_gare`), avec `nom_gare`, `code_commune` et `segment_drg` (A nationale, B
+    régionale, C locale ; plusieurs lettres pour une gare à plusieurs codes UIC). Toutes les gares
+    sont gardées, comme les lycées : la gare la plus proche d'une commune du bord peut être hors de
+    l'aire. Le fichier ne dit pas si une gare est fermée aux voyageurs. Lu dans la copie gelée.
+    """
+    contenu = stockage.copie_controlee(
+        _copies_publiques(config.CHEMIN_RAW_GARES), config.CHEMIN_RAW_GARES, config.SHA256_GARES
+    )
+    brut = pd.read_parquet(io.BytesIO(contenu))
+    # L'export Opendatasoft donne la position en WKB, longitude et latitude en WGS84
+    position = gpd.GeoSeries.from_wkb(brut["position_geographique"], crs=4326)
+    liste = gpd.GeoDataFrame(
+        {
+            "id_gare": brut["id"],
+            "nom_gare": brut["nom"],
+            "code_commune": brut["codeinsee"],
+            "segment_drg": brut["segment_drg"],
+        },
+        geometry=position.to_numpy(),
+        crs=4326,
+    ).to_crs(config.CRS_CALCUL)
+    assert liste["id_gare"].is_unique, "Identifiant de gare en double."
+    assert not (liste.geometry.is_empty | liste.geometry.isna()).any(), "Gare sans position."
+    outre_mer = liste["code_commune"].str.startswith("97")
+    assert not outre_mer.any(), f"Gares hors métropole : {list(liste.loc[outre_mer, 'nom_gare'])}."
+    return liste
+
+
+def apl_medecins() -> pd.Series:
+    """Renvoie l'APL 2024 aux médecins généralistes, tous âges, par commune (H4).
+
+    Index `code_commune`, arrondissements municipaux à la place de leur commune parente, comme
+    dans le référentiel. Indicateur déjà calculé par la DREES, utilisé tel quel. Lu dans la
+    copie gelée.
+    """
+    contenu = stockage.copie_controlee(
+        _copies_publiques(config.CHEMIN_RAW_APL), config.CHEMIN_RAW_APL, config.SHA256_APL
+    )
+    feuille = pd.read_excel(
+        io.BytesIO(contenu),
+        sheet_name=config.FEUILLE_APL,
+        header=config.LIGNE_ENTETE_APL,
+        skiprows=[config.LIGNE_ENTETE_APL + 1],
+        dtype={config.COLONNE_CODE_APL: str},
+        engine="calamine",
+    )
+    apl = feuille.set_index(config.COLONNE_CODE_APL)[config.COLONNE_APL].rename("apl_mg")
+    assert apl.index.is_unique, "Code commune en double dans l'APL."
+    assert apl.notna().all() and (apl >= 0).all(), "APL manquante ou négative."
+    return apl.rename_axis("code_commune")
+
+
+def equipements_sportifs() -> gpd.GeoDataFrame:
+    """Renvoie les installations sportives en service de France métropolitaine, en Lambert 93.
+
+    Une ligne par installation (`id_installation`), placée au point de son premier équipement
+    dans l'ordre des numéros : les équipements d'une installation sont à 52 m les uns des autres
+    en médiane, mais une moyenne de leurs points tomberait n'importe où pour un sentier ou un
+    site de nature. Écartées : les installations hors service (`inst_hs_bool`, seul indicateur
+    de fermeture), les équipements sans coordonnées et l'outre-mer. Toutes les familles sont
+    gardées (H4). Lu dans la copie gelée.
+    """
+    contenu = stockage.copie_controlee(
+        _copies_publiques(config.CHEMIN_RAW_EQUIPEMENTS_SPORTIFS),
+        config.CHEMIN_RAW_EQUIPEMENTS_SPORTIFS,
+        config.SHA256_EQUIPEMENTS_SPORTIFS,
+    )
+    colonnes = ["equip_numero", "inst_numero", "inst_hs_bool", "new_code", "equip_x", "equip_y"]
+    brut = pd.read_parquet(io.BytesIO(contenu), columns=colonnes)
+    assert brut["equip_numero"].is_unique, "Numéro d'équipement en double dans Data ES."
+    # Outre-mer : codes 97x et 98x ; deux équipements n'ont pas de code commune
+    metropole = brut["new_code"].notna() & ~brut["new_code"].str[:2].isin(["97", "98"])
+    en_service = brut["inst_hs_bool"] != "Oui"
+    situes = brut["equip_x"].notna() & brut["equip_y"].notna()
+    retenus = brut[metropole & en_service & situes].sort_values("equip_numero")
+    installations = retenus.drop_duplicates("inst_numero")
+    points = gpd.points_from_xy(
+        installations["equip_x"].astype(float), installations["equip_y"].astype(float), crs=4326
+    )
+    return gpd.GeoDataFrame(
+        {
+            "id_installation": installations["inst_numero"].to_numpy(),
+            "code_commune": installations["new_code"].to_numpy(),
+        },
+        geometry=points,
+    ).to_crs(config.CRS_CALCUL)
+
+
+def statistiques_dvf() -> pd.DataFrame:
+    """Renvoie le nombre de ventes et le prix médian au m² de chaque commune (Statistiques DVF).
+
+    Lignes de l'échelle « commune » seulement (le fichier mêle sections, EPCI et départements),
+    avec `code_geo` en chaîne. Les arrondissements de Lyon y sont, et aussi Lyon entière (69123).
+    La médiane est renseignée dès une vente : le seuil de ventes s'applique au nettoyage. Lu dans
+    la copie gelée.
+    """
+    contenu = stockage.copie_controlee(
+        _copies_publiques(config.CHEMIN_RAW_DVF), config.CHEMIN_RAW_DVF, config.SHA256_DVF
+    )
+    colonnes = ["code_geo", "echelle_geo", config.COLONNE_VENTES_DVF, config.COLONNE_PRIX_DVF]
+    dvf = pd.read_csv(io.BytesIO(contenu), usecols=colonnes, dtype={"code_geo": str})
+    communes = dvf[dvf["echelle_geo"] == "commune"].drop(columns="echelle_geo")
+    assert communes["code_geo"].is_unique, "Une commune apparaît deux fois dans DVF."
+    return communes
+
+
+def equipements_culturels() -> gpd.GeoDataFrame:
+    """Renvoie les équipements culturels de France métropolitaine de la BPE 2025, en Lambert 93.
+
+    Une ligne par type d'équipement et par point (`type_equipement`) : une même adresse porte
+    parfois deux labels du même type (un musée qui est aussi une maison des Illustres, une
+    bibliothèque et le siège de son réseau), comptés une fois. Tous les équipements culturels de
+    métropole sont géolocalisés, à 50 m près pour une qualité acceptable. Lu dans la copie gelée.
+    """
+    contenu = stockage.copie_controlee(
+        _copies_publiques(config.CHEMIN_RAW_BPE), config.CHEMIN_RAW_BPE, config.SHA256_BPE
+    )
+    colonnes = ["SDOM", "TYPEQU", "DEPCOM", "EPSG", "LAMBERT_X", "LAMBERT_Y"]
+    bpe = pd.read_parquet(
+        io.BytesIO(contenu),
+        columns=colonnes,
+        filters=[("SDOM", "==", config.SOUS_DOMAINE_CULTURE_BPE)],
+    )
+    culture = bpe[bpe["EPSG"] == config.EPSG_BPE_METROPOLE]
+    assert culture[["LAMBERT_X", "LAMBERT_Y"]].notna().all().all(), (
+        "Équipement culturel de métropole sans coordonnées."
+    )
+    lieux = culture.drop_duplicates(["TYPEQU", "LAMBERT_X", "LAMBERT_Y"])
+    return gpd.GeoDataFrame(
+        {
+            "type_equipement": lieux["TYPEQU"].to_numpy(),
+            "code_commune": lieux["DEPCOM"].to_numpy(),
+        },
+        geometry=gpd.points_from_xy(lieux["LAMBERT_X"], lieux["LAMBERT_Y"]),
+        crs=config.CRS_CALCUL,
+    )
