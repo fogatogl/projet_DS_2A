@@ -46,6 +46,18 @@ VARIABLES_PAIRES_SANS_CADRES = (
     "expose_lyc_prive_10km",
 )
 
+# Aires d'attraction des villes 2020 candidates : nom -> code AAV2020 (chaîne, le zéro compte)
+AIRES_CANDIDATES = {
+    "Rennes": "013",
+    "Nantes": "008",
+    "Toulouse": "005",
+    "Bordeaux": "006",
+    "Lyon": "002",
+    "Grenoble": "014",
+    "Lille": "004",
+    "Strasbourg": "010",
+}
+
 # Stockage : S3 si les identifiants AWS et le nom du bucket sont définis, sinon le dossier data/
 VARIABLES_AWS = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
 VARIABLE_BUCKET_S3 = "BUCKET_S3"
@@ -283,6 +295,12 @@ SHA256_CONTOURS = {
 # Contours des départements : leur union donne le contour de la métropole (frontière)
 CHEMIN_RAW_DEPARTEMENTS = "raw/contours_departements_20261020.parquet"
 SHA256_DEPARTEMENTS = "a6e4d3b3a7657f61b8fe9b710efa5f50c0cab76cde0d522f4cfd4adfdbe405ca"
+NB_DEPARTEMENTS_METROPOLE = 96
+# Pôle ou couronne selon `CATEAAV2020` ; un autre code fait échouer le référentiel
+POLE_COURONNE_AAV = {"11": "pole", "12": "pole", "20": "couronne"}
+# Communes à arrondissements municipaux des aires candidates et leur nombre
+NB_ARRONDISSEMENTS = {"69123": 9}
+CATEGORIE_COMMUNE_CENTRE = "11"
 
 # IPS des lycées : export de l'API, copie gelée
 URL_IPS = (
