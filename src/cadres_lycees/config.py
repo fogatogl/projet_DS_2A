@@ -32,9 +32,16 @@ MESURES_H4 = {
     "Installations sportives": ("log_n_sport_5km", 1),
     "Équipements culturels": ("log_n_culture_5km", 1),
 }
+
+CHEMIN_BASE = "final/base_communale.parquet"
+CHEMIN_PAIRES = "final/paires.parquet"
 CHEMIN_TABLEAU_SUPPORT = Path(__file__).parents[2] / "docs" / "tableau_support.md"
 # Rayons du tableau de support : le principal et le 10 km rapporté à côté
 RAYONS_SUPPORT_KM = (5, 10)
+# Aires de l'Ouest, dont au moins une doit être retenue (critère a)
+AIRES_OUEST = ("Nantes", "Rennes")
+# Aires proches d'une frontière terrestre, où les lycées étrangers manquent, et seuil de distance
+AIRES_FRONTALIERES = ("Lille", "Strasbourg")
 DIST_FRONTIERE_KM = 10
 # Écarts calculés dans les paires ; ceux du tableau de support n'utilisent pas la part de cadres
 VARIABLES_PAIRES_SANS_CADRES = (
@@ -45,6 +52,8 @@ VARIABLES_PAIRES_SANS_CADRES = (
     "expose_lyc_prive_5km",
     "expose_lyc_prive_10km",
 )
+VARIABLES_PAIRES_H4 = ("dist_gare_min", "apl_mg", "log_n_sport_5km", "log_n_culture_5km")
+VARIABLES_PAIRES = ("part_cadres_2022", *VARIABLES_PAIRES_SANS_CADRES, *VARIABLES_PAIRES_H4)
 
 # Aires d'attraction des villes 2020 candidates : nom -> code AAV2020 (chaîne, le zéro compte)
 AIRES_CANDIDATES = {
@@ -57,6 +66,7 @@ AIRES_CANDIDATES = {
     "Lille": "004",
     "Strasbourg": "010",
 }
+AIRES_RETENUES = {aire: AIRES_CANDIDATES[aire] for aire in ("Nantes", "Lyon", "Strasbourg")}
 
 # Stockage : S3 si les identifiants AWS et le nom du bucket sont définis, sinon le dossier data/
 VARIABLES_AWS = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
@@ -263,6 +273,9 @@ NB_LIGNES_PASSAGE_COG = 36760
 NATURES_LYCEES = (300, 301, 302, 306)
 # `code_type_contrat_prive` du privé sous contrat d'association
 CONTRATS_PRIVE_RETENUS = ("30", "31")
+# Robustesse : lycées professionnels (320) et privé hors contrat (10) réintégrés
+NATURES_LYCEES_ROBUSTESSE = (*NATURES_LYCEES, 320)
+CONTRATS_PRIVE_ROBUSTESSE = (*CONTRATS_PRIVE_RETENUS, "10")
 # Lycées de cette robustesse sans coordonnées, écartés nommément ; tout autre fait échouer
 UAI_SANS_POSITION_ROBUSTESSE = (
     "0443105L",
@@ -394,3 +407,26 @@ FONDS_CARTE = {"Fond gris (Esri)": "Esri.WorldGrayCanvas", "Plan IGN": "Geoporta
 # Carte IRIS : classes de part de cadres en % (borne basse incluse), ColorBrewer « Purples »
 BORNES_PART_CADRES_IRIS = (10, 20, 30, 40, 50)
 COULEURS_PART_CADRES_IRIS = ("#f2f0f7", "#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f")
+
+# Fichiers bruts lus par le projet et leur sha256, listés en annexe ; `{aav}` : un par aire
+FICHIERS_BRUTS = (
+    (CHEMIN_RAW_ANNUAIRE, SHA256_ANNUAIRE),
+    (CHEMIN_RAW_IPS, SHA256_IPS),
+    (CHEMIN_RAW_IVAL, SHA256_IVAL),
+    (CHEMIN_RAW_CONTOURS, SHA256_CONTOURS),
+    (CHEMIN_RAW_DEPARTEMENTS, SHA256_DEPARTEMENTS),
+    (CHEMIN_RAW_CONTOURS_IRIS, SHA256_CONTOURS_IRIS),
+    (CHEMIN_RAW_GARES, SHA256_GARES),
+    (CHEMIN_RAW_APL, SHA256_APL),
+    (CHEMIN_RAW_EQUIPEMENTS_SPORTIFS, SHA256_EQUIPEMENTS_SPORTIFS),
+    (CHEMIN_RAW_BPE, SHA256_BPE),
+    (CHEMIN_RAW_DVF, SHA256_DVF),
+    (CHEMIN_RAW_CHEFS_LIEUX, SHA256_CHEFS_LIEUX),
+    (CHEMIN_RAW_AAV, SHA256_AAV),
+    (CHEMIN_RAW_PASSAGE_COG, SHA256_PASSAGE_COG),
+    (CHEMIN_RAW_SERIE_RP2022, SHA256_SERIE_RP2022),
+    (CHEMIN_RAW_EVOL_STRUCT_RP2022, SHA256_EVOL_STRUCT_RP2022),
+    (CHEMIN_RAW_SERIE_CSP, SHA256_SERIE_CSP),
+    (CHEMIN_RAW_ACTIVITE_IRIS_2011, SHA256_ACTIVITE_IRIS_2011),
+    (CHEMIN_RAW_ACTIVITE_IRIS_2022, SHA256_ACTIVITE_IRIS_2022),
+)
