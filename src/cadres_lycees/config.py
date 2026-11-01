@@ -353,8 +353,13 @@ DERNIERE_SESSION_IVAL = 2022
 NB_SESSIONS_MIN_IVAL = 5
 # Valeur ajoutée du taux d'accès de la seconde au bac ; taux de réussite et 2012-2025 en robustesse
 INDICATEUR_IVAL = "va_acces_2nde"
+# Fiabilité de l'IVAL : deux moitiés, sessions minimales dans chacune, seuil de testabilité de H3
+MOITIES_IVAL = ((2012, 2017), (2018, 2022))
+NB_SESSIONS_MIN_MOITIE = 3
+SEUIL_FIABILITE_IVAL = 0.5
 # Au-delà de 5 % de tirages écartés (rang incomplet), l'intervalle n'est pas rapporté
 MAX_TIRAGES_ECARTES = 50
+CATEGORIES_TIERS_IVAL = ("1er tiers", "2e tiers", "3e tiers", "sans IVAL")
 # Seuil des petites communes (actifs de 25 à 54 ans) et permutations de l'indice de Moran
 ACTIFS_MIN_ROBUSTESSE = 200
 # Lycées publiés dans l'IVAL sous un autre UAI que dans l'annuaire -> UAI de l'annuaire
