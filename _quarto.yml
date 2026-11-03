@@ -1,0 +1,67 @@
+project:
+  type: website
+  output-dir: _site
+  # Sans cette liste, Quarto rendrait aussi les brouillons de notebooks/exploration/
+  render:
+    - rapport.ipynb
+
+# nb-clean retire les sorties des notebooks à chaque commit : le rendu doit donc exécuter le
+# rapport, depuis les copies gelées
+execute:
+  enabled: true
+
+lang: fr
+
+# Légendes « Tableau 1 » plutôt que « Table 1 »
+crossref:
+  tbl-title: Tableau
+  tbl-prefix: Tableau
+
+website:
+  title: "Lycées et géographie des cadres"
+  # Publié sur la fork fogatogl/DataScience par `quarto publish gh-pages` (README, « Voir les résultats »)
+  site-url: https://fogatogl.github.io/DataScience/
+  navbar:
+    left:
+      # Page écrite dans _site/ par presentation/construire.py, après le rendu
+      - text: Présentation interactive
+        href: presentation.html
+    right:
+      - icon: github
+        href: https://github.com/fogatogl/DataScience
+        aria-label: Dépôt du projet
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    toc-title: Sommaire
+    code-fold: true
+    code-summary: Code
+    # Les lettres grecques (β des coefficients de H3) dans une police mathématique, classe `.grec`.
+    # Quarto donne aux figures matplotlib leur largeur en pixels : sans cette règle, une figure
+    # plus large que la colonne (les cartes IRIS, affichées dans des onglets) déborde au lieu d'être
+    # réduite. Un tableau d'encadré plus large que la colonne (tableau de support) défile
+    # horizontalement au lieu de sortir de la page
+    include-in-header:
+      text: |
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital@0;1&display=swap">
+        <style>
+        main img { max-width: 100%; height: auto; }
+        .grec { font-family: "STIX Two Text", "Times New Roman", serif; font-size: 1.08em; }
+        .callout table { display: block; max-width: 100%; overflow-x: auto; font-size: 0.85em; }
+        </style>
+    # Une carte folium créée dans un onglet caché est cadrée sur une surface nulle et montre le
+    # monde entier : elle est recréée la première fois que son onglet s'affiche
+    include-after-body:
+      text: |
+        <script>
+        document.addEventListener("shown.bs.tab", (evenement) => {
+          const panneau = document.querySelector(evenement.target.dataset.bsTarget);
+          panneau.querySelectorAll("iframe[srcdoc]:not([data-recree])").forEach((carte) => {
+            carte.dataset.recree = "oui";
+            carte.srcdoc = carte.srcdoc;
+          });
+        });
+        </script>
