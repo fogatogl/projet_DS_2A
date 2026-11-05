@@ -148,6 +148,8 @@ CHEMIN_RAW_CHEFS_LIEUX = "raw/chefs_lieux_cog2025_20261103.parquet"
 SHA256_CHEFS_LIEUX = "a43f55f677f463f10bb9487007426874fddf14a127a3e48021e787753e9849f6"
 # Sous ce nombre de ventes, la médiane du prix d'une commune est manquante
 MIN_VENTES_DVF = 10
+# L'Alsace-Moselle n'est pas dans DVF : la robustesse au prix y est sans objet
+AIRES_HORS_DVF = ("Strasbourg",)
 # Délai de `requests` par lecture (pas la durée totale) et essais par URL
 DELAI_TELECHARGEMENT_S = 120
 NB_ESSAIS_TELECHARGEMENT = 3
@@ -353,6 +355,8 @@ DERNIERE_SESSION_IVAL = 2022
 NB_SESSIONS_MIN_IVAL = 5
 # Valeur ajoutée du taux d'accès de la seconde au bac ; taux de réussite et 2012-2025 en robustesse
 INDICATEUR_IVAL = "va_acces_2nde"
+INDICATEUR_IVAL_ROBUSTESSE = "va_reu_total"
+DERNIERE_SESSION_IVAL_ROBUSTESSE = 2025
 # Fiabilité de l'IVAL : deux moitiés, sessions minimales dans chacune, seuil de testabilité de H3
 MOITIES_IVAL = ((2012, 2017), (2018, 2022))
 NB_SESSIONS_MIN_MOITIE = 3
@@ -362,6 +366,7 @@ MAX_TIRAGES_ECARTES = 50
 CATEGORIES_TIERS_IVAL = ("1er tiers", "2e tiers", "3e tiers", "sans IVAL")
 # Seuil des petites communes (actifs de 25 à 54 ans) et permutations de l'indice de Moran
 ACTIFS_MIN_ROBUSTESSE = 200
+NB_PERMUTATIONS_MORAN = 999
 # Lycées publiés dans l'IVAL sous un autre UAI que dans l'annuaire -> UAI de l'annuaire
 UAI_IVAL_RATTACHES = {
     "0440256P": "0443088T",
