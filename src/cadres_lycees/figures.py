@@ -7,11 +7,12 @@ from collections.abc import Collection
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
-from cadres_lycees import charte, config
+from cadres_lycees import charte, config, h1
 
 
 def fig_aires(
@@ -180,3 +181,194 @@ def _panneau_ips(ax: plt.Axes, profil: pd.DataFrame, lycees: gpd.GeoDataFrame) -
         ncol=2,
         frameon=False,
     )
+
+
+def _libelle_cellule(bas_km: float, haut_km: float, rayon_km: int) -> str:
+    """Nomme une cellule d'anneaux par ses bornes et son rayon : « 20-30 km, rayon 5 km ».
+
+    Une cellule de 0 km à l'infini est l'aire entière, après fusion de tous ses anneaux.
+    """
+    if haut_km == float("inf"):
+        bornes = "toute l'aire" if bas_km == 0 else f"{bas_km:.0f} km et plus"
+    else:
+        bornes = f"{bas_km:.0f}-{haut_km:.0f} km"
+    return f"{bornes}, rayon {rayon_km} km"
+
+
+def fig_h1(
+    principale: pd.DataFrame, secondaire: pd.DataFrame, anneaux: pd.DataFrame, titre: str
+) -> Figure:
+    """`fig_h1` : estimations de H1 par aire, en points avec leurs intervalles à 95 %.
+
+    Trois panneaux à axes propres, les aires sur la même ligne de l'un à l'autre (H2) :
+    pente principale et pente secondaire des paires (`h1.pentes_paires_par_aire`), écarts
+    des cellules estimables à 5 et à 10 km (`h1.ecarts_anneaux`), chacune nommée par ses
+    bornes. Les cellules non estimables sont nommées en note. `titre` est le message de la
+    figure, écrit par le groupe.
+    """
+    aires = charte.aires_ordonnees(principale.index)
+    assert set(secondaire.index) == set(aires), "Les deux pentes n'ont pas les mêmes aires."
+    texte = config.COULEUR_TEXTE
+    # La première aire en haut
+    rang = {aire: len(aires) - 1 - k for k, aire in enumerate(aires)}
+    estimables = anneaux[anneaux["estimable"]]
+    marqueurs = {5: "o", 10: "s"}
+
+    fig, axes = plt.subplots(1, 3, figsize=(12, 1.8 + 1.3 * len(aires)), sharey=True)
+    panneaux = [
+        (axes[0], "Pente principale", "points par km de distance au lycée privé le plus proche"),
+        (axes[1], "Pente secondaire", "points par lycée privé de plus à 5 km"),
+        (axes[2], "Écarts des cellules d'anneaux", "points, communes exposées moins non exposées"),
+    ]
+    for ax, pentes in ((axes[0], principale), (axes[1], secondaire)):
+        for aire in aires:
+            ligne = pentes.loc[aire]
+            couleur = config.COULEURS_AIRES[aire]
+            ax.hlines(rang[aire], ligne["ic_bas"] * 100, ligne["ic_haut"] * 100, color=couleur)
+            ax.scatter(ligne["pente"] * 100, rang[aire], s=45, color=couleur, zorder=3)
+    ax = axes[2]
+    for aire in aires:
+        cellules = estimables[estimables["aire"] == aire].reset_index(drop=True)
+        couleur = config.COULEURS_AIRES[aire]
+        for k, cellule in cellules.iterrows():
+            # Les cellules d'une aire sont réparties autour de sa ligne, sans se recouvrir
+            y = rang[aire] + 0.18 * ((len(cellules) - 1) / 2 - k)
+            ax.hlines(y, cellule["ic_bas"] * 100, cellule["ic_haut"] * 100, color=couleur)
+            ax.scatter(
+                cellule["ecart"] * 100,
+                y,
+                s=40,
+                marker=marqueurs[cellule["rayon_km"]],
+                color=couleur,
+                zorder=3,
+            )
+            ax.annotate(
+                _libelle_cellule(cellule["bas_km"], cellule["haut_km"], cellule["rayon_km"]),
+                (cellule["ic_haut"] * 100, y),
+                xytext=(4, 0),
+                textcoords="offset points",
+                va="center",
+                fontsize=9,
+                color=texte,
+            )
+    for ax, nom, unite in panneaux:
+        ax.axvline(0, color=config.COULEUR_LIAISON, linewidth=1, zorder=0)
+        ax.set_title(nom, loc="left", fontsize=11, color=texte)
+        ax.set_xlabel(unite, color=texte, fontsize=9)
+        charte.styler_axes(ax, "x", axe_y=False)
+    axes[0].set_yticks([rang[aire] for aire in aires])
+    axes[0].set_yticklabels(aires, color=texte)
+    axes[0].set_ylim(-0.6, len(aires) - 0.4)
+    # Place à droite pour les noms des cellules, sans graduation ni axe au-delà des intervalles
+    gauche, droite = axes[2].get_xlim()
+    graduations = [x for x in axes[2].get_xticks() if gauche <= x <= droite]
+    axes[2].set_xlim(gauche, droite + 0.6 * (droite - gauche))
+    axes[2].set_xticks(graduations)
+    axes[2].spines["bottom"].set_bounds(gauche, droite)
+
+    non_estimables = anneaux[~anneaux["estimable"]]
+    noms = [
+        f"{ligne.aire} ({_libelle_cellule(ligne.bas_km, ligne.haut_km, ligne.rayon_km)})"
+        for ligne in non_estimables.itertuples()
+    ]
+    charte.habiller(
+        fig,
+        titre,
+        "Sens de H1 : pente principale négative, pente secondaire et écarts positifs. Pentes des "
+        "paires de communes contiguës sans constante, à écarts de distance au centre et de "
+        "log-densité donnés ;\nécarts des cellules : régression pondérée par les actifs, à "
+        "distance au centre et log-densité données (rond : rayon de 5 km, carré : 10 km). "
+        f"Intervalles à 95 % par bootstrap ({config.NB_TIRAGES_BOOTSTRAP} tirages).\n"
+        f"Cellules non estimables : {', '.join(noms)}.\nSources : Insee, recensement 2022, "
+        f"« Évolution et structure de la population » ; annuaire de l'éducation "
+        f"({config.DATE_ANNUAIRE}) ; IGN.",
+    )
+    return fig
+
+
+def fig_paires(paires: pd.DataFrame, pentes: pd.DataFrame, titre: str) -> Figure:
+    """`fig_paires` : écart de part de cadres et écart de distance au lycée privé dans les paires.
+
+    Un panneau par aire : le nuage par classes de `h1.nuage_paires` et la droite de pente
+    principale de H1, sans constante, avec son intervalle à 95 %. `paires` vient de
+    `pipeline.construire_base`, `pentes` de `h1.pentes_paires_par_aire(paires,
+    "d_dist_lyc_prive_min")` ; `titre` est le message de la figure, écrit par le groupe.
+    """
+    acces = "d_dist_lyc_prive_min"
+    aires = charte.aires_ordonnees(paires["aire"])
+    assert set(pentes.index) == set(aires), "Les pentes et les paires n'ont pas les mêmes aires."
+    texte = config.COULEUR_TEXTE
+
+    fig, axes = plt.subplots(1, len(aires), figsize=(14, 5.4), sharey=True, squeeze=False)
+    for ax, aire in zip(axes[0], aires, strict=True):
+        couleur = config.COULEURS_AIRES[aire]
+        nuage = h1.nuage_paires(paires[paires["aire"] == aire], acces)
+        ligne = pentes.loc[aire]
+        ax.axhline(0, color=config.COULEUR_LIAISON, linewidth=0.8, zorder=0)
+        ax.axvline(0, color=config.COULEUR_LIAISON, linewidth=0.8, zorder=0)
+        ax.scatter(
+            nuage["acces_residuel"],
+            nuage["cadres_residuel"] * 100,
+            s=28,
+            color=couleur,
+            edgecolor="white",
+            zorder=2,
+        )
+        bornes_x = [nuage["acces_residuel"].min(), nuage["acces_residuel"].max()]
+        # Éventail des droites dont la pente parcourt l'intervalle à 95 %
+        x = np.linspace(*bornes_x, 50)
+        ax.fill_between(
+            x,
+            ligne["ic_bas"] * 100 * x,
+            ligne["ic_haut"] * 100 * x,
+            color=couleur,
+            alpha=0.15,
+            linewidth=0,
+            zorder=0,
+        )
+        ax.plot(
+            bornes_x,
+            [ligne["pente"] * 100 * x for x in bornes_x],
+            color=couleur,
+            linewidth=1.8,
+            zorder=1,
+        )
+        pente, bas, haut = (
+            f"{ligne[cle] * 100:+.2f}".replace(".", ",").replace("-", "−")
+            for cle in ("pente", "ic_bas", "ic_haut")
+        )
+        # La pente va au-dessus du panneau : dedans, elle pourrait cacher des points
+        ax.set_title(aire, loc="left", fontsize=12, color=couleur, fontweight="bold", pad=22)
+        ax.text(
+            0,
+            1.02,
+            f"pente {pente} point par km [{bas} ; {haut}]",
+            transform=ax.transAxes,
+            va="bottom",
+            fontsize=10,
+            color=texte,
+        )
+        ax.set_xlabel(
+            "Écart de distance au lycée privé le plus proche,\nà position égale (km)", color=texte
+        )
+        charte.styler_axes(ax, "both")
+    axes[0][0].set_ylabel(
+        "Écart de part de cadres en 2022,\nà position égale (points)", color=texte
+    )
+
+    effectifs = ", ".join(
+        f"{aire} {pentes.loc[aire, 'n_paires']:.0f} ({pentes.loc[aire, 'n_communes']:.0f} communes)"
+        for aire in aires
+    )
+    charte.habiller(
+        fig,
+        titre,
+        f"Paires de communes contiguës d'une même aire : {effectifs}, chacune comptée dans les "
+        "deux sens. Les deux écarts sont pris à écarts de distance au centre et de log-densité "
+        "donnés (résidus des régressions sur ces contrôles, sans constante) ; chaque point est la "
+        f"moyenne d'une des {config.NB_CLASSES_NUAGE_PAIRES} classes d'effectifs égaux de l'écart "
+        "de distance. Droite : pente principale de H1 ; intervalle à 95\u00a0% par bootstrap des "
+        f"communes ({config.NB_TIRAGES_BOOTSTRAP} tirages). Sources : Insee, recensement 2022 ; "
+        f"annuaire de l'éducation ({config.DATE_ANNUAIRE}) ; IGN.",
+    )
+    return fig
