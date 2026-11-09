@@ -8,6 +8,7 @@ affiché tel quel en annexe.
 from pathlib import Path
 
 import pandas as pd
+from pandas.io.formats.style import Styler
 
 from cadres_lycees import charte, config
 
@@ -30,6 +31,34 @@ def _estimation(ligne: pd.Series, valeur: str, facteur: float) -> str:
     if ecartes:
         texte += f" ({ecartes} tirages écartés)"
     return texte
+
+
+def tableau_h3(estimation: pd.DataFrame) -> Styler:
+    """Met en forme les coefficients de H3 : une ligne par coefficient, une colonne par portée.
+
+    `estimation` vient de `h3.estimation_h3` (index portée, coefficient) ou de
+    `robustesse.robustesse_h3` (index variante, coefficient) : la colonne est le premier niveau.
+    Points de part de cadres, 2011-2022, pour un écart-type ; intervalle à 95 %. Renvoie un
+    `Styler` : son HTML garde les indices des β (β<sub>q</sub>), qu'un DataFrame échapperait.
+    """
+    cases = estimation.apply(_estimation, axis=1, valeur="estimation", facteur=1)
+    premier = estimation.index.names[0]
+    # « Ensemble » d'abord, puis les aires dans l'ordre de la charte
+    portees = [p for p in estimation.index.unique(premier) if p not in config.COULEURS_AIRES]
+    colonnes = portees + charte.aires_ordonnees(
+        [p for p in estimation.index.unique(premier) if p in config.COULEURS_AIRES]
+    )
+    tableau = cases.unstack(premier).reindex(
+        index=estimation.index.unique("coefficient"), columns=colonnes
+    )
+    tableau = tableau.rename(columns={"ensemble": "Ensemble"})
+    beta = {"q": "β<sub>q</sub>", "n": "β<sub>n</sub>"}
+    libelles = {
+        "β_q": f'<span class="grec">{beta["q"]}</span> (qualité)',
+        "β_n": f'<span class="grec">{beta["n"]}</span> (nombre)',
+        "β_q − β_n": f'<span class="grec">{beta["q"]} − {beta["n"]}</span>',
+    }
+    return tableau.rename(index=libelles).rename_axis(index=None, columns=None).style
 
 
 def tableau_acces(resume: pd.DataFrame) -> pd.DataFrame:
@@ -73,6 +102,21 @@ def tableau_effectifs(effectifs: pd.DataFrame) -> pd.DataFrame:
     }
     tableau = effectifs[list(libelles)].rename(columns=libelles).T
     return tableau[charte.aires_ordonnees(tableau.columns)].rename_axis(index=None, columns=None)
+
+
+def tableau_fiabilite(fiabilite: pd.DataFrame) -> pd.DataFrame:
+    """Met en forme `h3.fiabilite_ival` : libellés en clair ; seule « ensemble » tranche H3."""
+    libelles = {
+        "r": "Corrélation des deux moitiés (r)",
+        "r_spearman_brown": "Fiabilité (Spearman-Brown)",
+        "n_communes_h3": "Communes de la population de H3",
+        "n_communes": "Communes renseignées dans les deux moitiés",
+        "n_lycees": "Lycées distincts à 5 km",
+    }
+    ordre = ["ensemble", *charte.aires_ordonnees(fiabilite.index.drop("ensemble"))]
+    tableau = fiabilite.loc[ordre, list(libelles)].rename(columns=libelles)
+    texte = tableau.map(lambda valeur: f"{valeur:.3f}".replace(".", ",").removesuffix(",000"))
+    return texte.rename(index={"ensemble": "Ensemble (tranche H3)"}).rename_axis(index=None)
 
 
 def tableau_gradient(parts: pd.DataFrame) -> pd.DataFrame:

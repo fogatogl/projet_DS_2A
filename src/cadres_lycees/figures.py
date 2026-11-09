@@ -372,3 +372,74 @@ def fig_paires(paires: pd.DataFrame, pentes: pd.DataFrame, titre: str) -> Figure
         f"annuaire de l'éducation ({config.DATE_ANNUAIRE}) ; IGN.",
     )
     return fig
+
+
+def fig_h3(terciles: pd.DataFrame, titre: str) -> Figure:
+    """`fig_h3` : évolution de la part de cadres par tiers d'IVAL de chaque aire (H3).
+
+    Un point par aire et par catégorie (`config.CATEGORIES_TIERS_IVAL`), avec son intervalle à 95 %
+    par bootstrap des grappes ; la catégorie « sans IVAL » est à part. `terciles` vient de
+    `h3.terciles_h3`, dont les tirages écartés sont nommés en note ; `titre` est le message
+    de la figure, écrit par le groupe. Elle décrit : le verdict de H3 se lit sur β_q
+    et β_n.
+    """
+    aires = charte.aires_ordonnees(terciles.index.get_level_values("aire"))
+    texte = config.COULEUR_TEXTE
+    decalages = {aire: 0.22 * (k - (len(aires) - 1) / 2) for k, aire in enumerate(aires)}
+    # La catégorie « sans IVAL » est séparée des tiers par un intervalle plus large
+    positions = {categorie: k for k, categorie in enumerate(config.CATEGORIES_TIERS_IVAL[:3])}
+    positions[config.CATEGORIES_TIERS_IVAL[3]] = 3.6
+
+    fig, ax = plt.subplots(figsize=(10, 5.6))
+    ax.axvline(3.3, color=config.COULEUR_LIAISON, linewidth=1, linestyle=":")
+    for aire in aires:
+        couleur = config.COULEURS_AIRES[aire]
+        for k, (categorie, ligne) in enumerate(terciles.loc[aire].iterrows()):
+            x = positions[categorie] + decalages[aire]
+            ax.vlines(x, ligne["ic_bas"], ligne["ic_haut"], color=couleur, linewidth=2)
+            ax.scatter(
+                x,
+                ligne["moyenne"],
+                s=45,
+                color=couleur,
+                edgecolor="white",
+                zorder=3,
+                label=aire if k == 0 else None,
+            )
+            ax.annotate(
+                f"{int(ligne['n_communes'])}",
+                (x, ligne["ic_bas"]),
+                xytext=(0, -10),
+                textcoords="offset points",
+                ha="center",
+                fontsize=7,
+                color=texte,
+            )
+    ax.set_xticks(list(positions.values()))
+    ax.set_xticklabels(list(positions), color=texte)
+    ax.set_xlabel("IVAL moyenne des lycées à 5 km, en tiers calculés dans chaque aire", color=texte)
+    ax.set_ylabel("Évolution 2011-2022 (points)", color=texte)
+    # Place sous les intervalles pour le nombre de communes
+    ax.set_ylim(terciles["ic_bas"].min() - 1, None)
+    charte.styler_axes(ax, "y")
+    ax.legend(frameon=False, loc="upper left", bbox_to_anchor=(1.0, 1.0))
+
+    ecartes = terciles[terciles["tirages_ecartes"] > 0]
+    noms_ecartes = ", ".join(
+        f"{aire} {categorie} {int(ligne['tirages_ecartes'])}"
+        for (aire, categorie), ligne in ecartes.iterrows()
+    )
+    charte.habiller(
+        fig,
+        titre,
+        "Communes ayant au moins un lycée retenu à 5 km ; « sans IVAL » : aucun de ces lycées n'a "
+        "d'IVAL. Moyennes simples ; sous chaque point, le nombre de communes : sous 10 communes, "
+        "l'intervalle est peu informatif.\nIntervalles à 95 % "
+        "par bootstrap des grappes « lycée avec IVAL le plus proche », tirées dans chaque aire "
+        f"({config.NB_TIRAGES_BOOTSTRAP} tirages) ;\ntirages sans commune de la catégorie, écartés "
+        f"pour elle : {noms_ecartes or 'aucun'}.\nIVAL : valeur ajoutée du taux d'accès de la "
+        "seconde au bac, moyenne des sessions 2012 à 2022, lycées d'au moins 5 sessions.\n"
+        "Sources : Insee, recensements 2011 et 2022, « Évolution et structure de la population » ; "
+        f"DEPP, IVAL ; annuaire de l'éducation ({config.DATE_ANNUAIRE}) ; IGN.",
+    )
+    return fig
