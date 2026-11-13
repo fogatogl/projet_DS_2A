@@ -33,6 +33,23 @@ def _estimation(ligne: pd.Series, valeur: str, facteur: float) -> str:
     return texte
 
 
+def tableau_robustesse(robustesse: pd.DataFrame) -> pd.DataFrame:
+    """Met en forme le tableau de robustesse de H1 : une ligne par variante, une aire par colonne.
+
+    Chaque case donne la pente en points, par km (ou par lycée pour les pentes secondaires), et
+    son intervalle à 95 %, avec le nombre de tirages écartés s'il y en a. « — » : la variante ne
+    concerne pas l'aire ; intervalle non rapporté au-delà de `config.MAX_TIRAGES_ECARTES`
+    tirages écartés. `robustesse` vient de `robustesse.robustesse_h1`.
+    """
+    cases = robustesse.apply(_estimation, axis=1, valeur="pente", facteur=100).unstack("aire")
+    aires = charte.aires_ordonnees(cases.columns)
+    variantes = robustesse.index.unique("variante")
+    tableau = cases.reindex(index=variantes, columns=aires).fillna("—")
+    unites = ["points par lycée" if "secondaire" in nom else "points par km" for nom in variantes]
+    tableau.insert(0, "Unité", unites)
+    return tableau.rename_axis(index=None, columns=None)
+
+
 def tableau_h3(estimation: pd.DataFrame) -> Styler:
     """Met en forme les coefficients de H3 : une ligne par coefficient, une colonne par portée.
 
@@ -117,6 +134,32 @@ def tableau_fiabilite(fiabilite: pd.DataFrame) -> pd.DataFrame:
     tableau = fiabilite.loc[ordre, list(libelles)].rename(columns=libelles)
     texte = tableau.map(lambda valeur: f"{valeur:.3f}".replace(".", ",").removesuffix(",000"))
     return texte.rename(index={"ensemble": "Ensemble (tranche H3)"}).rename_axis(index=None)
+
+
+def tableau_moran(moran: pd.DataFrame) -> pd.DataFrame:
+    """Met en forme `robustesse.moran_part_cadres` : une ligne par aire, I et p-valeur."""
+    variables = {
+        "part_cadres_2022": "part de cadres",
+        "ecart_anneau": "écart à la moyenne de l'anneau",
+    }
+    tableau = moran[["I", "p_valeur"]].unstack("variable")
+    tableau = tableau[
+        [(mesure, variable) for variable in variables for mesure in ("I", "p_valeur")]
+    ]
+    tableau.columns = [
+        f"{'I de Moran' if mesure == 'I' else 'p-valeur'}, {variables[variable]}"
+        for mesure, variable in tableau.columns
+    ]
+    # La plus petite p-valeur possible par permutations est 1 / (permutations + 1)
+    plancher = 1 / (config.NB_PERMUTATIONS_MORAN + 1)
+
+    def case(nom: str, valeur: float) -> str:
+        if nom.startswith("p-valeur") and valeur <= plancher:
+            return f"< {plancher:.3f}".replace(".", ",")
+        return f"{valeur:.3f}".replace(".", ",")
+
+    texte = tableau.apply(lambda colonne: colonne.map(lambda v: case(colonne.name, v)))
+    return texte.loc[charte.aires_ordonnees(texte.index)].rename_axis(index=None)
 
 
 def tableau_gradient(parts: pd.DataFrame) -> pd.DataFrame:

@@ -3,6 +3,7 @@
 La charte commune est dans `charte.py`, les cartes interactives dans `cartes.py`.
 """
 
+import textwrap
 from collections.abc import Collection
 
 import geopandas as gpd
@@ -441,5 +442,62 @@ def fig_h3(terciles: pd.DataFrame, titre: str) -> Figure:
         "seconde au bac, moyenne des sessions 2012 à 2022, lycées d'au moins 5 sessions.\n"
         "Sources : Insee, recensements 2011 et 2022, « Évolution et structure de la population » ; "
         f"DEPP, IVAL ; annuaire de l'éducation ({config.DATE_ANNUAIRE}) ; IGN.",
+    )
+    return fig
+
+
+def fig_robustesse(robustesse: pd.DataFrame, titre: str) -> Figure:
+    """Pente principale de H1 dans les variantes de robustesse principales, par aire.
+
+    Une ligne par variante de `config.VARIANTES_FIGURE_ROBUSTESSE`, un point par aire avec son
+    intervalle à 95 % ; la spécification principale, en haut sur fond gris, sert de repère. Les
+    autres variantes restent dans le tableau détaillé. `robustesse` vient de
+    `robustesse.robustesse_h1` ; `titre` est le message de la figure.
+    """
+    variantes = list(config.VARIANTES_FIGURE_ROBUSTESSE)
+    absentes = sorted(set(variantes) - set(robustesse.index.unique("variante")))
+    assert not absentes, f"Variantes absentes de la robustesse : {absentes}."
+    choisies = robustesse.loc[variantes]
+    aires = charte.aires_ordonnees(choisies.index.get_level_values("aire"))
+    texte = config.COULEUR_TEXTE
+    decalages = {aire: 0.2 * (k - (len(aires) - 1) / 2) for k, aire in enumerate(aires)}
+
+    fig, ax = plt.subplots(figsize=(10, 1.8 + 1.0 * len(variantes)))
+    ax.axhspan(-0.45, 0.45, color=config.COULEUR_FOND_RETENUES, zorder=0)
+    ax.axvline(0, color=config.COULEUR_LIAISON, linewidth=1.2, zorder=0)
+    for rang, variante in enumerate(variantes):
+        for aire in aires:
+            if (variante, aire) not in choisies.index:
+                continue
+            ligne = choisies.loc[(variante, aire)]
+            y = rang + decalages[aire]
+            couleur = config.COULEURS_AIRES[aire]
+            if pd.notna(ligne["ic_bas"]):
+                ax.hlines(y, ligne["ic_bas"] * 100, ligne["ic_haut"] * 100, color=couleur, lw=3)
+            ax.scatter(
+                ligne["pente"] * 100,
+                y,
+                s=70,
+                color=couleur,
+                edgecolor="white",
+                zorder=3,
+                label=aire if rang == 0 else None,
+            )
+    ax.set_yticks(range(len(variantes)))
+    ax.set_yticklabels([textwrap.fill(nom, 31) for nom in variantes], color=texte, fontsize=13)
+    ax.invert_yaxis()
+    ax.set_xlabel(
+        "Points de part de cadres par km de distance au lycée privé", color=texte, fontsize=13
+    )
+    charte.styler_axes(ax, "x", axe_y=False)
+    ax.tick_params(labelsize=12)
+    ax.legend(frameon=False, loc="upper left", bbox_to_anchor=(1.0, 1.0), fontsize=13)
+    charte.habiller(
+        fig,
+        titre,
+        "Sens de H1 : pente négative. Même estimation et même bootstrap que la spécification "
+        f"principale ({config.NB_TIRAGES_BOOTSTRAP} tirages par commune). Prix au m² : Lyon et "
+        "Nantes seulement (Alsace-Moselle hors DVF). Toutes les variantes sont dans le tableau "
+        "détaillé. Sources : Insee, recensement 2022 ; annuaire de l'éducation ; DVF ; IGN.",
     )
     return fig
