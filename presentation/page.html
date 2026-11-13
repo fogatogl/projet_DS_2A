@@ -1,0 +1,1164 @@
+<title>À quelques kilomètres près</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:wght@400;600&text=%E2%89%A5%E2%89%A4%E2%88%92%CE%94%CE%B2%C3%97&display=swap">
+<style>
+:root{
+  --fond:#eef0ee; --surface:#fafbfa; --surface-2:#e4e8e6;
+  --encre:#151b1f; --encre-2:#36424a; --discret:#5e6a72;
+  --filet:#c6cdd0; --filet-2:#dde2e3; --focus:#0a5bd3;
+  --trait-commune:rgba(21,27,31,.32);
+  --public:#3a7bd5; --prive:#e8663d;
+  --surligne:rgba(232,102,61,.13); --surligne-bord:#e8663d;
+  --f-titre:"Barlow Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --f-math:"STIX Two Text","Cambria Math","Noto Serif","Times New Roman",serif;
+  --f-texte:"Public Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --fond:#0e1215; --surface:#151b1f; --surface-2:#1d252a;
+    --encre:#e7ecee; --encre-2:#c3ccd1; --discret:#93a0a8;
+    --filet:#36424a; --filet-2:#242d33; --focus:#7db1ff;
+    --trait-commune:rgba(231,236,238,.28);
+    --surligne:rgba(232,102,61,.18); --surligne-bord:#f08a62;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --fond:#0e1215; --surface:#151b1f; --surface-2:#1d252a;
+  --encre:#e7ecee; --encre-2:#c3ccd1; --discret:#93a0a8;
+  --filet:#36424a; --filet-2:#242d33; --focus:#7db1ff;
+  --trait-commune:rgba(231,236,238,.28);
+  --surligne:rgba(232,102,61,.18); --surligne-bord:#f08a62;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:56px}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--fond);color:var(--encre);font:16px/1.6 var(--f-texte);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust:100%;overflow-x:hidden}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.page{max-width:1160px;margin:0 auto}
+.texte{max-width:72ch}
+h1,h2,h3,h4{font-family:var(--f-titre);font-weight:600;line-height:1.05;margin:0}
+p{margin:.6em 0}
+.math{font-family:var(--f-math);font-size:1.13em;font-weight:400;font-style:normal;line-height:1;white-space:nowrap;letter-spacing:0}
+.math sub{font-size:.74em;line-height:0;vertical-align:-.32em;margin-left:.02em}
+.math-svg{font-family:var(--f-math);font-size:1.13em;font-weight:400;letter-spacing:0}
+small,.note{color:var(--discret);font-size:.84rem;line-height:1.5}
+.num{font-variant-numeric:tabular-nums}
+
+/* Bandeau de navigation */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:1000;background:var(--fond);border-bottom:1px solid var(--filet);
+  margin:0 calc(-1 * max(16px, env(safe-area-inset-left, 0px)));padding:0 max(16px, env(safe-area-inset-left, 0px))}
+.nav-in{max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:18px;height:44px;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+.nav-in::-webkit-scrollbar{display:none}
+.nav-marque{font-family:var(--f-titre);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:15px;text-decoration:none}
+.nav ol{display:flex;gap:12px;list-style:none;margin:0;padding:0;font-size:13px}
+.nav ol a{text-decoration:none;color:var(--discret)}
+.nav ol a:hover,.nav ol a.actif{color:var(--encre)}
+.nav ol b{font-family:var(--f-titre);font-weight:600;color:var(--encre);margin-right:4px}
+
+/* Ouverture */
+.ouverture{padding:36px 0 24px}
+.surtitre{font-family:var(--f-titre);text-transform:uppercase;letter-spacing:.14em;font-size:14px;color:var(--discret);font-weight:600}
+.grand-titre{font-size:clamp(2.6rem, 7vw, 5.6rem);font-weight:700;text-transform:uppercase;letter-spacing:-.01em;line-height:.9;margin:.12em 0 .12em}
+.sous-titre{font-family:var(--f-titre);font-size:clamp(1.2rem,2.4vw,1.6rem);font-weight:500;color:var(--encre-2);max-width:46ch;line-height:1.15}
+.question{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:32px;margin-top:22px;align-items:start}
+.question blockquote{margin:0;padding:0 0 0 18px;border-left:4px solid var(--encre);font-size:1.1rem;line-height:1.5}
+.question blockquote b,.hyps-titre{display:block;font-family:var(--f-titre);text-transform:uppercase;letter-spacing:.1em;font-size:14px;margin-bottom:6px;font-weight:700}
+.statut{font-size:.88rem;color:var(--encre-2);margin-top:12px}
+.hyps{list-style:none;margin:0;padding:0;font-size:.92rem;line-height:1.4}
+.hyps li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;padding:6px 0;border-top:1px solid var(--filet)}
+.hyps li b{font-family:var(--f-titre);font-weight:700;font-size:1.25rem;line-height:1}
+.hyps em{font-style:normal;color:var(--discret);font-size:.82rem}
+.chiffres{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 16px;border-top:1px solid var(--filet);margin:14px 0 4px}
+.chiffres div{padding:8px 0;border-bottom:1px solid var(--filet)}
+.chiffres strong{display:block;font-family:var(--f-titre);font-size:2rem;font-weight:600;line-height:1}
+.chiffres span{font-size:.82rem;color:var(--discret)}
+@media (max-width:720px){.chiffres{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Sections */
+section.bloc{padding:26px 0 4px;border-top:1px solid var(--filet);margin-top:24px}
+.entete{display:grid;grid-template-columns:66px minmax(0,1fr);gap:2px 16px;align-items:baseline;margin-bottom:10px}
+.entete .no{font-family:var(--f-titre);font-weight:700;font-size:2.8rem;line-height:.8;color:var(--encre)}
+.entete h2{font-size:clamp(1.6rem,3vw,2.15rem);font-weight:600}
+.corps{margin-left:82px}
+@media (max-width:720px){.entete{grid-template-columns:46px minmax(0,1fr)}.entete .no{font-size:2.1rem}.corps{margin-left:0}}
+
+figure{margin:16px 0 8px}
+.fig-titre{font-family:var(--f-titre);font-size:1.3rem;font-weight:600;margin-bottom:2px}
+.fig-sous{font-size:.88rem;color:var(--discret);margin-bottom:8px}
+.lecture{font-size:.9rem;color:var(--encre-2);max-width:80ch}
+.lecture b{font-weight:700;color:var(--encre)}
+.source{font-size:.78rem;color:var(--discret);margin-top:4px}
+
+/* Contrôles */
+.controles{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:10px 0}
+.segments{display:inline-flex;border:1px solid var(--encre)}
+.segments button{font:600 14px var(--f-texte);background:transparent;color:var(--encre);border:0;padding:7px 13px;cursor:pointer;border-right:1px solid var(--encre);display:inline-flex;align-items:center;gap:7px}
+.segments button:last-child{border-right:0}
+.segments button[aria-pressed="true"]{background:var(--encre);color:var(--fond)}
+.segments .pastille{width:9px;height:9px;display:inline-block;border-radius:50%}
+.bouton{font:600 14px var(--f-texte);background:var(--encre);color:var(--fond);border:1px solid var(--encre);padding:7px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.case{display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
+.case input{accent-color:var(--encre);width:16px;height:16px}
+.curseur{display:flex;align-items:center;gap:10px;flex:1 1 300px;min-width:0}
+.curseur input[type=range]{flex:1;min-width:0;accent-color:var(--encre)}
+.graduations{display:flex;justify-content:space-between;font:600 13px var(--f-titre);color:var(--discret);padding:0 2px;letter-spacing:.04em}
+.graduations span.actif{color:var(--encre)}
+
+/* Planche principale */
+.planche{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:22px;align-items:start}
+@media (max-width:900px){.planche{grid-template-columns:minmax(0,1fr)}}
+.cadre{position:relative;padding:8px;background:var(--surface)}
+.cadre::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;border:1px solid var(--encre);
+  background:
+   repeating-linear-gradient(90deg,var(--encre) 0 36px,transparent 36px 72px) top/100% 5px no-repeat,
+   repeating-linear-gradient(90deg,var(--encre) 0 36px,transparent 36px 72px) bottom/100% 5px no-repeat,
+   repeating-linear-gradient(180deg,var(--encre) 0 36px,transparent 36px 72px) left/5px 100% no-repeat,
+   repeating-linear-gradient(180deg,var(--encre) 0 36px,transparent 36px 72px) right/5px 100% no-repeat}
+.carte{isolation:isolate;height:min(56vh,520px);min-height:340px;background:var(--surface-2);position:relative}
+.carte-simple{border:1px solid var(--filet);height:min(52vh,460px)}
+.millesime{position:absolute;left:22px;top:18px;z-index:3;pointer-events:none;font-family:var(--f-titre);font-weight:700;font-size:clamp(3rem,7vw,5rem);line-height:.9;color:var(--encre);
+  text-shadow:0 0 6px var(--surface),0 0 14px var(--surface)}
+.millesime small{display:block;font-size:.95rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--encre-2);text-shadow:inherit}
+@media (max-width:600px){.millesime{position:static;text-shadow:none;padding:2px 4px 8px;font-size:2.6rem}.millesime small{display:inline;margin-right:10px;font-size:.85rem}}
+.panneau{border-top:3px solid var(--encre);padding-top:10px}
+.panneau-nom{font-family:var(--f-titre);font-weight:600;font-size:1.5rem;line-height:1.05}
+.panneau-sous{font-size:.84rem;color:var(--discret);min-height:2.6em}
+.valeurs{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:6px}
+.valeurs td,.valeurs th{padding:3px 4px;border-bottom:1px solid var(--filet-2);text-align:right}
+.valeurs th{font-weight:600;text-align:left;font-family:var(--f-titre);font-size:1rem}
+.valeurs tr.actif td,.valeurs tr.actif th{background:var(--surface-2)}
+.valeurs td.pale{color:var(--discret);font-style:italic}
+.legende{display:flex;flex-wrap:wrap;gap:0;margin-top:10px;font-size:12.5px;align-items:stretch}
+.legende .classe{display:flex;flex-direction:column;min-width:44px;flex:1 1 44px}
+.legende .classe i{display:block;height:12px;border:1px solid var(--trait-commune);border-left-width:0}
+.legende .classe:first-child i{border-left-width:1px}
+.legende .classe span{color:var(--discret);margin-top:3px;font-variant-numeric:tabular-nums}
+@media (max-width:600px){.legende .classe span{font-size:11px;letter-spacing:-.01em}}
+.legende-ligne{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--encre-2);margin-top:8px;align-items:center}
+.legende-ligne i{display:inline-block;width:12px;height:12px;vertical-align:-1px;margin-right:5px;border:1px solid var(--trait-commune)}
+.legende-ligne i.rond{border-radius:50%;border:1.5px solid var(--surface)}
+
+/* Leaflet aux couleurs de la page */
+.leaflet-container{font:13px var(--f-texte);background:var(--surface-2)}
+.leaflet-container:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.fond-ign{opacity:.95}
+:root[data-theme="dark"] .fond-ign{filter:invert(1) brightness(.78) contrast(.92)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fond-ign{filter:invert(1) brightness(.78) contrast(.92)}}
+path.commune{stroke:var(--trait-commune);stroke-width:.6px;transition:fill .55s ease,fill-opacity .55s ease}
+path.commune.survol{stroke:var(--encre);stroke-width:2.4px}
+path.lycee{stroke:#fff;stroke-width:2px}
+@media (prefers-reduced-motion: reduce){path.commune{transition:none}}
+.leaflet-tooltip.bulle-carte{background:var(--surface);color:var(--encre);border:1px solid var(--filet);border-radius:0;box-shadow:0 2px 10px rgba(0,0,0,.18);padding:7px 9px;font-size:12.5px;line-height:1.4}
+.leaflet-tooltip.bulle-carte::before{display:none}
+.leaflet-control-attribution{background:color-mix(in srgb, var(--surface) 85%, transparent)!important;color:var(--encre-2)!important;font-size:11px}
+.leaflet-control-attribution a{color:var(--encre-2)}
+.leaflet-bar a,.leaflet-bar a:hover{background:var(--surface);color:var(--encre);border-bottom-color:var(--filet)}
+.leaflet-bar{border:1px solid var(--encre)!important;border-radius:0!important;box-shadow:none!important}
+.leaflet-bar a:first-child,.leaflet-bar a:last-child{border-radius:0!important}
+.leaflet-control-scale-line{background:color-mix(in srgb, var(--surface) 80%, transparent);color:var(--encre);border-color:var(--encre)}
+
+/* Graphiques */
+.graphe svg{display:block;width:100%;height:auto;overflow:visible}
+.axe text{fill:var(--discret);font:12px var(--f-texte)}
+.axe path,.axe line{stroke:var(--filet)}
+.grille line{stroke:var(--filet-2)}
+.grille path{display:none}
+.titre-axe{fill:var(--encre-2);font:12.5px var(--f-texte)}
+.etiq{fill:var(--encre);font:600 14px var(--f-titre);letter-spacing:.02em}
+.ligne-zero{stroke:var(--encre);stroke-width:1;stroke-dasharray:3 3;opacity:.7}
+.bande-retenue{fill:var(--surface-2)}
+.texte-svg{fill:var(--encre-2);font:12px var(--f-texte)}
+.trait-schema{stroke:var(--encre);fill:none}
+.multiples{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+@media (max-width:820px){.multiples{grid-template-columns:minmax(0,1fr)}}
+.panneau-fig h4{font-size:1.1rem;margin-bottom:2px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.panneau-fig h4 small{font:400 .8rem var(--f-texte);color:var(--discret)}
+.panneau-fig .unite{font-size:.8rem;color:var(--discret);margin-bottom:2px}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:820px){.duo{grid-template-columns:minmax(0,1fr)}}
+.schema{max-width:400px}
+
+#infobulle{position:fixed;z-index:3000;pointer-events:none;background:var(--surface);color:var(--encre);border:1px solid var(--filet);box-shadow:0 3px 14px rgba(0,0,0,.2);padding:8px 10px;font-size:12.5px;line-height:1.45;max-width:290px}
+.bulle-titre{font-family:var(--f-titre);font-weight:600;font-size:15px;margin-bottom:2px}
+
+/* Tableaux */
+.defile{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+table.tab{border-collapse:collapse;width:100%;font-size:.9rem}
+table.tab th,table.tab td{padding:7px 10px;border-bottom:1px solid var(--filet);text-align:left;vertical-align:top}
+table.tab thead th{font-family:var(--f-titre);font-weight:600;font-size:1rem;letter-spacing:.02em;border-bottom:2px solid var(--encre);white-space:nowrap}
+table.tab td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.verdict{display:inline-block;font:600 15px var(--f-titre);letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--encre);padding:1px 7px;white-space:nowrap}
+.verdict.plein{background:var(--encre);color:var(--fond)}
+.regle{border-left:4px solid var(--encre);padding:4px 0 4px 14px;margin:14px 0;font-size:.95rem}
+.regle p{max-width:80ch}
+#texte-h1-lyon p{max-width:none}
+.regle .kick{font-family:var(--f-titre);text-transform:uppercase;letter-spacing:.1em;font-size:13px;font-weight:600;color:var(--discret);display:block}
+
+/* Robustesse */
+table.robu{min-width:660px}
+table.robu td.cel{min-width:170px}
+table.robu td.cel .v{font-variant-numeric:tabular-nums;font-weight:600}
+table.robu td.cel .ic{font-variant-numeric:tabular-nums;color:var(--discret);font-size:.82rem;margin-left:4px}
+table.robu td.cel svg{display:block;width:100%;height:16px;margin-top:3px}
+table.robu td.exclut{box-shadow:inset 3px 0 0 var(--surligne-bord);background:var(--surligne)}
+table.robu th[scope=row]{font-weight:600;max-width:260px}
+table.robu th .u{display:block;font-weight:400;font-size:.78rem;color:var(--discret)}
+.vide{color:var(--discret);font-size:.82rem;font-style:italic}
+
+.titre-chiffre{font-family:var(--f-titre);font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.05;margin:4px 0 8px}
+details{border-top:1px solid var(--filet);border-bottom:1px solid var(--filet);padding:10px 0;margin:14px 0}
+summary{cursor:pointer;font-family:var(--f-titre);font-weight:600;font-size:1.12rem;color:var(--encre-2)}
+details[open] summary{margin-bottom:8px;color:var(--encre)}
+pre{background:var(--surface-2);padding:12px 14px;overflow-x:auto;font-size:13px;line-height:1.5}
+.limites{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 28px;padding:0;margin:8px 0;list-style:none}
+.limites li{border-top:1px solid var(--filet);padding:8px 0;font-size:.95rem}
+@media (max-width:720px){.limites{grid-template-columns:minmax(0,1fr)}.question{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){
+  table.empile thead{display:none}
+  table.empile tr{display:block;border-bottom:1px solid var(--filet);padding:8px 0}
+  table.empile td{display:block;border:0;padding:2px 0}
+  table.empile td.n{text-align:left}
+  table.empile td[data-l]::before{content:attr(data-l);display:block;font:600 12px var(--f-titre);letter-spacing:.08em;text-transform:uppercase;color:var(--discret)}
+}
+
+/* Conclusion */
+.messages{list-style:none;margin:6px 0 0;padding:0;counter-reset:msg}
+.messages li{counter-increment:msg;display:grid;grid-template-columns:56px minmax(0,1fr);gap:4px 16px;padding:16px 0;border-top:1px solid var(--filet)}
+.messages li::before{content:counter(msg);font-family:var(--f-titre);font-weight:700;font-size:2.6rem;line-height:.85}
+.messages h3{font-size:clamp(1.35rem,2.6vw,1.8rem);font-weight:600;line-height:1.12;max-width:62ch}
+.messages p{grid-column:2;margin:.4em 0 0;max-width:80ch;color:var(--encre-2)}
+.cloture{border-left:4px solid var(--encre);padding:4px 0 4px 14px;margin:18px 0 0;font-size:1rem;max-width:80ch}
+footer{border-top:3px solid var(--encre);margin-top:48px;padding:16px 0 36px;font-size:.82rem;color:var(--discret)}
+footer p{margin:.3em 0;max-width:110ch}
+</style>
+
+<div class="nav" role="navigation" aria-label="Sommaire">
+  <div class="nav-in">
+    <a class="nav-marque" href="#haut">À quelques km près</a>
+    <ol>
+      <li><a href="#question"><b>01</b>Question</a></li>
+      <li><a href="#cadres"><b>02</b>Cadres</a></li>
+      <li><a href="#donnees"><b>03</b>Données</a></li>
+      <li><a href="#acces"><b>04</b>Accès</a></li>
+      <li><a href="#methode"><b>05</b>Méthode</a></li>
+      <li><a href="#h1"><b>06</b>H1 · H2</a></li>
+      <li><a href="#h3"><b>07</b>H3</a></li>
+      <li><a href="#h4"><b>08</b>H4</a></li>
+      <li><a href="#robustesse"><b>09</b>Robustesse</a></li>
+      <li><a href="#limites"><b>10</b>Limites</a></li>
+      <li><a href="#conclusion"><b>11</b>Conclusion</a></li>
+    </ol>
+  </div>
+</div>
+
+<main class="page" id="haut">
+
+<section id="question" aria-labelledby="titre-page">
+<header class="ouverture">
+  <div class="surtitre">ENSAE · Python pour la data science · projet de groupe, 2026</div>
+  <h1 class="grand-titre" id="titre-page">À quelques kilomètres près</h1>
+  <p class="sous-titre">Lycées et géographie des cadres dans trois aires urbaines de province : Nantes, Lyon, Strasbourg</p>
+  <div class="question">
+    <div>
+      <blockquote>
+        <b>La question</b>
+        À position égale dans l'aire, les communes qui offrent un meilleur accès à des lycées privés ou à forte valeur ajoutée comptent-elles plus de cadres que leurs voisines, et ce lien tient-il face aux autres infrastructures&nbsp;?
+      </blockquote>
+      <p class="statut">Le projet décrit des associations, pas des relations causales. Les hypothèses et les règles de verdict de H1 et de H3 ont été fixées avant les résultats. Les lectures de cette page reprennent celles du rapport, qui fait foi.</p>
+    </div>
+    <div>
+      <span class="hyps-titre">Quatre hypothèses</span>
+      <ol class="hyps">
+        <li><b>H1</b><span>À distance égale du centre, plus de cadres là où l'accès aux lycées privés sous contrat est meilleur. <em>Verdict par aire.</em></span></li>
+        <li><b>H2</b><span>Ce lien est plus faible dans l'aire de l'Ouest (Nantes), où le privé est plus répandu. <em>Descriptive.</em></span></li>
+        <li><b>H3</b><span>La qualité des lycées accessibles, plus que leur nombre, accompagne la hausse de la part de cadres de 2011 à 2022. <em>Verdict, trois aires ensemble.</em></span></li>
+        <li><b>H4</b><span>Le lien est plus fort avec les lycées qu'avec les gares, les médecins et les équipements. <em>Descriptive.</em></span></li>
+      </ol>
+    </div>
+  </div>
+</header>
+</section>
+
+<section class="bloc" id="cadres">
+  <div class="entete"><span class="no">02</span><h2 id="titre-planche">La part de cadres baisse du centre vers la périphérie, à chaque recensement</h2></div>
+<figure aria-labelledby="titre-planche" style="margin-top:0">
+  <div class="fig-sous">Cadres et professions intellectuelles supérieures parmi les actifs de 25 à 54 ans, par commune</div>
+  <div class="controles">
+    <div class="segments" role="group" aria-label="Aire affichée" id="carte-aires"></div>
+    <button class="bouton" id="carte-lecture" type="button" aria-pressed="false"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path id="carte-lecture-icone" d="M2 1 L11 6 L2 11 Z" fill="currentColor"/></svg><span>Lecture</span></button>
+    <div class="curseur">
+      <label for="carte-annee" class="note" style="white-space:nowrap">Recensement</label>
+      <div style="flex:1;min-width:0">
+        <input type="range" id="carte-annee" min="0" step="1" style="width:100%">
+        <div class="graduations" id="carte-graduations" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+  <div class="planche">
+    <div>
+      <div class="cadre">
+        <div class="millesime" id="carte-millesime-bloc" aria-live="polite"><small id="carte-aire-nom"></small><span id="carte-millesime"></span></div>
+        <div class="carte" id="carte-temps" role="region" aria-label="Carte de la part de cadres par commune"></div>
+      </div>
+      <div class="legende" id="carte-legende" aria-label="Légende : part de cadres"></div>
+      <div class="legende-ligne" id="carte-legende-pale"></div>
+    </div>
+    <aside class="panneau" aria-live="polite">
+      <div class="panneau-nom" id="carte-nom"></div>
+      <div class="panneau-sous" id="carte-sous"></div>
+      <div class="graphe" id="carte-courbe"></div>
+      <table class="valeurs" id="carte-valeurs"></table>
+      <p class="note" id="carte-note-lyon"></p>
+    </aside>
+  </div>
+  <p class="source">Insee, séries historiques du recensement, 1999 à 2022, ramenées au COG 2025&nbsp;; contours IGN ADMIN EXPRESS. Fond&nbsp;: Plan IGN. Survolez une commune pour sa série&nbsp;; en pointillé, l'ensemble de l'aire.</p>
+</figure>
+</section>
+
+<section class="bloc" id="donnees">
+  <div class="entete"><span class="no">03</span><h2>Une ligne par commune, trois aires aux profils de privé contrastés</h2></div>
+  <div class="corps">
+    <div class="chiffres" id="chiffres-cles"></div>
+    <div class="defile"><table class="tab empile" id="tab-profil"></table></div>
+    <p class="lecture" id="texte-profil"></p>
+    <details>
+      <summary>Détail&nbsp;: sources et choix des aires</summary>
+      <p class="texte">Recensement 2022 (cadres parmi les actifs de 25 à 54 ans), annuaire de l'éducation (lycées généraux, technologiques et polyvalents), IPS et valeur ajoutée (IVAL) des lycées, gares, médecins, équipements&nbsp;; sources mutables lues dans des copies gelées.</p>
+      <p class="texte">Trois aires choisies parmi huit candidates, sans donnée sur les cadres&nbsp;: une aire de l'Ouest, un contraste dans le poids du privé, assez de communes exposées pour comparer.</p>
+    </details>
+  </div>
+</section>
+
+<section class="bloc" id="acces">
+  <div class="entete"><span class="no">04</span><h2 id="titre-acces">Hors des villes-centres, le lycée privé le plus proche est souvent à plus de 10&nbsp;km</h2></div>
+  <div class="corps">
+    <figure aria-labelledby="titre-acces" style="margin-top:0">
+      <div class="controles">
+        <div class="segments" role="group" aria-label="Aire affichée" id="acces-aires"></div>
+        <div class="segments" role="group" aria-label="Couleur des communes" id="acces-mode">
+          <button type="button" id="acces-mode-distance" aria-pressed="true">Distance au privé</button>
+          <button type="button" id="acces-mode-anneaux" aria-pressed="false">Anneaux du centre</button>
+        </div>
+        <label class="case"><input type="checkbox" id="acces-public" checked> <span style="color:var(--public)">●</span> publics</label>
+        <label class="case"><input type="checkbox" id="acces-prive" checked> <span style="color:var(--prive)">●</span> privés sous contrat</label>
+      </div>
+      <div class="carte carte-simple" id="carte-acces" role="region" aria-label="Carte de l'accès aux lycées"></div>
+      <div class="legende" id="acces-legende"></div>
+      <p class="lecture"><b>Lecture&nbsp;:</b> distance à vol d'oiseau du centroïde de la commune au lycée privé sous contrat le plus proche (en mode «&nbsp;Anneaux&nbsp;», au centre de l'aire)&nbsp;; une commune est <em>exposée</em> si elle a un lycée privé à 5&nbsp;km.</p>
+      <p class="source">Annuaire de l'éducation (copie du 13/10/2026), IPS et IVAL (DEPP), zonage en aires d'attraction des villes 2020 (Insee)&nbsp;; contours IGN. Fond&nbsp;: Plan IGN.</p>
+    </figure>
+  </div>
+</section>
+
+<section class="bloc" id="methode">
+  <div class="entete"><span class="no">05</span><h2>Comparer des voisines, à position égale dans l'aire</h2></div>
+  <div class="corps">
+    <p class="texte">La part de cadres et l'accès aux lycées varient tous deux avec la distance au centre&nbsp;: une comparaison naïve mêlerait les deux.</p>
+    <div class="duo">
+      <figure>
+        <div class="fig-titre">Le gradient centre-périphérie</div>
+        <div class="fig-sous">Part de cadres 2022 par anneau de distance au centre (cadres sur actifs de l'anneau)</div>
+        <div id="gradient-legende"></div>
+        <div class="graphe" id="fig-gradient"></div>
+        <p class="lecture" id="texte-gradient"></p>
+      </figure>
+      <figure>
+        <div class="fig-titre">Les paires de communes contiguës</div>
+        <div class="fig-sous">Estimation principale de H1</div>
+        <div class="graphe schema" id="schema-paires"></div>
+        <p class="lecture"><b>Lecture&nbsp;:</b> ce que deux voisines partagent (marché de l'emploi, prix régionaux) disparaît dans la différence.</p>
+      </figure>
+    </div>
+    <details>
+      <summary>Détail&nbsp;: estimation et anneaux</summary>
+      <p class="texte"><span id="note-gradient"></span> Pente des paires sans constante, sur toutes les paires de l'aire&nbsp;; intervalles à 95&nbsp;% par bootstrap par commune (1&nbsp;000 tirages), car une commune entre dans plusieurs paires. <span id="note-paires"></span></p>
+      <p class="texte"><strong>En complément, les anneaux.</strong> Dans chaque anneau de distance au centre, on compare les communes avec et sans lycée privé à 5&nbsp;km (puis à 10&nbsp;km), si chaque groupe compte au moins 15 communes et si leurs distances moyennes au centre diffèrent de 2&nbsp;km au plus. Ils servent au verdict&nbsp;: un résultat nul n'est «&nbsp;établi&nbsp;» qu'avec un anneau estimable aux deux rayons.</p>
+    </details>
+  </div>
+</section>
+
+<section class="bloc" id="h1">
+  <div class="entete"><span class="no">06</span><h2>Près d'un lycée privé, un écart de cadres entre voisines qu'on ne distingue pas de zéro</h2></div>
+  <div class="corps">
+    <figure style="margin-top:0">
+      <div class="controles" style="margin-top:0"><span class="fig-sous" style="margin:0">Paires contiguës en 20 classes, écarts résiduels après contrôles&nbsp;; verdicts selon les règles fixées avant les résultats</span><label class="case"><input type="checkbox" id="nuage-ic" checked> intervalle à 95&nbsp;%</label></div>
+      <div class="multiples" id="fig-nuage"></div>
+      <p class="lecture"><b>Lecture&nbsp;:</b> une pente négative irait dans le sens de H1 (plus proche du lycée privé, plus de cadres).</p>
+    </figure>
+    <div class="regle" id="texte-h1-lyon"></div>
+    <details>
+      <summary>Détail&nbsp;: verdicts de H1, cellules d'anneau et H2</summary>
+      <div class="defile"><table class="tab empile" id="tab-h1-verdict"></table></div>
+      <div id="texte-h1-verdict"></div>
+    </details>
+  </div>
+</section>
+
+<section class="bloc" id="h3">
+  <div class="entete"><span class="no">07</span><h2>H3 : qualité ou simple présence&nbsp;?</h2></div>
+  <div class="corps">
+    <p class="texte">Hausse de la part de cadres de 2011 à 2022 selon la qualité des lycées à 5&nbsp;km (<span class="math">β<sub>q</sub></span>, valeur ajoutée IVAL) et selon leur nombre (<span class="math">β<sub>n</sub></span>).</p>
+    <div class="duo">
+      <figure>
+        <div class="fig-titre">La présence plus que la qualité</div>
+        <div class="fig-sous">Points d'évolution 2011-2022 pour un écart-type, trois aires ensemble, intervalles à 95&nbsp;% (bootstrap par grappes)</div>
+        <div class="graphe" id="fig-h3-beta"></div>
+      </figure>
+      <div class="regle" id="texte-h3-verdict"></div>
+    </div>
+    <details>
+      <summary>Détail&nbsp;: mesures, règle de verdict et autres mesures de la qualité</summary>
+      <p class="texte">Population&nbsp;: les <span id="h3-pop"></span> communes qui ont un lycée à 5&nbsp;km, dont <span id="h3-est"></span> où un lycée proche a une IVAL. <span class="math">β<sub>q</sub></span>&nbsp;: pente de l'IVAL moyenne des lycées à 5&nbsp;km&nbsp;; <span class="math">β<sub>n</sub></span>&nbsp;: pente du logarithme de leur nombre. Mesures centrées réduites dans chaque aire, comparaison à l'intérieur de chaque aire et de chaque anneau.</p>
+      <p class="texte" id="texte-h3-regle"></p>
+      <p class="texte" id="texte-h3-robu"></p>
+    </details>
+  </div>
+</section>
+
+<section class="bloc" id="h4">
+  <div class="entete"><span class="no">08</span><h2>H4 : les lycées face aux autres infrastructures</h2></div>
+  <div class="corps">
+    <figure style="margin-top:0">
+      <div class="fig-titre">Aucune infrastructure ne se détache</div>
+      <div class="fig-sous">Pente des paires contiguës, points de part de cadres pour un écart-type d'accès en plus (mesure centrée réduite dans l'aire, orientée «&nbsp;plus d'accès&nbsp;»), intervalles à 95&nbsp;%&nbsp;; point plein si l'intervalle exclut zéro</div>
+      <div class="graphe" id="fig-h4"></div>
+    </figure>
+    <p class="lecture" id="texte-h4"></p>
+    <details>
+      <summary>Détail&nbsp;: pentes du lycée privé et intervalles qui excluent zéro</summary>
+      <p class="texte" id="texte-h4-detail"></p>
+    </details>
+  </div>
+</section>
+
+<section class="bloc" id="robustesse">
+  <div class="entete"><span class="no">09</span><h2>Robustesse</h2></div>
+  <div class="corps">
+    <p class="titre-chiffre" id="rob-titre"></p>
+    <p class="texte" id="texte-densite"></p>
+    <p class="texte" id="texte-moran"></p>
+    <details>
+      <summary>Détail&nbsp;: la pente de H1 dans la spécification principale et les <span id="rob-n"></span> variantes</summary>
+      <div class="defile"><table class="tab robu" id="tab-robustesse"></table></div>
+      <p class="lecture">Pente, intervalle à 95&nbsp;% et trait qui le figure (repère&nbsp;: zéro). Lignes «&nbsp;pente secondaire&nbsp;» en points par lycée privé en plus dans le rayon, les autres en points par km. Surligné&nbsp;: intervalle qui exclut zéro. <span id="rob-source"></span></p>
+    </details>
+  </div>
+</section>
+
+<section class="bloc" id="limites">
+  <div class="entete"><span class="no">10</span><h2>Ce que le projet ne peut pas montrer</h2></div>
+  <div class="corps">
+    <ul class="limites">
+      <li><strong>Causalité inverse.</strong> Un lycée privé peut s'implanter ou se maintenir là où vivent déjà des familles aisées.</li>
+      <li><strong>Sélection résidentielle.</strong> Les préférences des ménages ne sont pas observées.</li>
+      <li><strong>Croissance démographique.</strong> Elle peut précéder l'ouverture de lycées et accompagne l'arrivée de cadres&nbsp;; elle n'est pas contrôlée.</li>
+      <li><strong>Mesure de l'accès.</strong> Distances à vol d'oiseau depuis le centroïde de la commune.</li>
+      <li id="limite-strasbourg"></li>
+      <li><strong>Maille.</strong> La commune mêle des quartiers très différents&nbsp;: elle est sans doute trop large pour voir un choix de logement selon le lycée (carte par IRIS du rapport, section 6).</li>
+    </ul>
+    <details>
+      <summary>Détail&nbsp;: sources et reproduction</summary>
+      <div class="defile">
+        <table class="tab empile">
+          <thead><tr><th>Source</th><th>Producteur</th><th>Rôle</th></tr></thead>
+          <tbody>
+            <tr><td>Recensement 2022, «&nbsp;Évolution et structure de la population&nbsp;» et séries historiques</td><td data-l="Producteur">Insee</td><td data-l="Rôle">Part de cadres 1999 à 2022, population, densité</td></tr>
+            <tr><td>Annuaire de l'éducation&nbsp;; IPS et IVAL des lycées</td><td data-l="Producteur">Éducation nationale, DEPP</td><td data-l="Rôle">Lycées, secteur, coordonnées&nbsp;; qualité (H3)</td></tr>
+            <tr><td>ADMIN EXPRESS (cartiflette)&nbsp;; aires d'attraction des villes 2020&nbsp;; COG 2025</td><td data-l="Producteur">IGN, InseeFrLab, Insee</td><td data-l="Rôle">Contours, contiguïté, périmètre</td></tr>
+            <tr><td>Gares&nbsp;; APL aux médecins généralistes&nbsp;; Data ES&nbsp;; BPE 2025</td><td data-l="Producteur">SNCF, DREES, ministère des Sports, Insee</td><td data-l="Rôle">Autres infrastructures (H4)</td></tr>
+            <tr><td>Statistiques DVF&nbsp;; chefs-lieux ADMIN EXPRESS</td><td data-l="Producteur">DGFiP, Etalab, IGN</td><td data-l="Rôle">Robustesse (prix au m², distances depuis la mairie)</td></tr>
+          </tbody>
+        </table>
+      </div>
+<pre>uv sync --locked        # dépendances figées dans uv.lock
+uv run pytest           # tests des calculs critiques
+uv run quarto render    # exécute rapport.ipynb et construit le site</pre>
+      <p class="note">Dépôt&nbsp;: <a id="lien-depot"></a>. Le rapport lit les copies gelées et échoue si un fichier n'a pas le sha256 attendu.</p>
+    </details>
+  </div>
+</section>
+
+<section class="bloc" id="conclusion">
+  <div class="entete"><span class="no">11</span><h2>Conclusion</h2></div>
+  <div class="corps">
+    <ol class="messages">
+      <li><h3 id="msg-h1-titre"></h3><p id="msg-h1"></p></li>
+      <li><h3 id="msg-h3-titre"></h3><p id="msg-h3"></p></li>
+      <li><h3>La part de cadres baisse avec la distance au centre, à chaque recensement.</h3><p id="msg-centre"></p></li>
+    </ol>
+    <p class="cloture">Ce sont des associations&nbsp;: un lycée privé peut aussi s'implanter là où vivent déjà des cadres.</p>
+  </div>
+</section>
+
+<footer>
+  <p>À quelques kilomètres près — projet du cours «&nbsp;Python pour la data science&nbsp;», ENSAE, 2026. Tous les chiffres de cette page sont recalculés par le code du projet&nbsp;; le rapport fait foi.</p>
+  <p>Références&nbsp;: Fack, G. et Grenet, J. (2010), «&nbsp;When do better schools raise housing prices?&nbsp;», <em>Journal of Public Economics</em>, 94(1-2)&nbsp;; Black, S. E. (1999), «&nbsp;Do Better Schools Matter?&nbsp;», <em>Quarterly Journal of Economics</em>, 114(2)&nbsp;; DEPP, <em>Repères et références statistiques</em>.</p>
+  <p>Fond des cartes&nbsp;: Plan IGN. Bibliothèques&nbsp;: Leaflet 1.9.4, d3 7.9.0.</p>
+</footer>
+</main>
+
+<div id="infobulle" hidden></div>
+
+<!--DONNEES-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function(){
+"use strict";
+const lire = id => JSON.parse(document.getElementById(id).textContent);
+const COMMUNES = lire("d-communes"), PARTS = lire("d-parts"), R = lire("d-resultats"), FONDS = lire("d-fonds");
+const lienDepot = document.getElementById("lien-depot");
+lienDepot.href = R.url_depot;
+lienDepot.textContent = R.url_depot.replace("https://", "");
+const AIRES = R.aires;
+const COUL = {Nantes:"#009e73", Lyon:"#a2559c", Strasbourg:"#9c6b1f"};
+const SECT = {public:"#3a7bd5", prive:"#e8663d"};
+const reduit = matchMedia("(prefers-reduced-motion: reduce)");
+
+const loc = d3.formatLocale({decimal:",", thousands:" ", grouping:[3], currency:[""," €"], minus:"−"});
+const F = {f0: loc.format(",.0f"), f1: loc.format(".1f"), f2: loc.format(".2f"), f3: loc.format(".3f"), s2: loc.format("+.2f"), s1: loc.format("+.1f")};
+const pct = v => v == null ? "—" : F.f1(v*100) + " %";
+const ic = (b,h,fmt) => (b == null || h == null) ? "intervalle non rapporté" : "[" + fmt(b) + " ; " + fmt(h) + "]";
+const exclutZero = (b,h) => b != null && h != null && (b > 0 || h < 0);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const enLettres = n => ["zéro","un","deux","trois","quatre","cinq","six","sept","huit","neuf","dix"][n] ?? String(n);
+const listeAires = l => l.length > 1 ? l.slice(0,-1).join(", ") + " et à " + l[l.length-1] : l[0];
+const ecrire = (id, html) => { document.getElementById(id).innerHTML = html; };
+
+/* ---------- Infobulle commune aux graphiques ---------- */
+const bulle = document.getElementById("infobulle");
+function montrer(ev, html){ bulle.innerHTML = html; bulle.hidden = false; placer(ev); }
+function placer(ev){
+  const pad = 14, r = bulle.getBoundingClientRect();
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + r.width > innerWidth - 8) x = Math.max(8, ev.clientX - r.width - pad);
+  if (y + r.height > innerHeight - 8) y = Math.max(8, ev.clientY - r.height - pad);
+  bulle.style.left = x + "px"; bulle.style.top = y + "px";
+}
+function cacher(){ bulle.hidden = true; }
+function survol(sel, html){
+  sel.on("mouseenter", (ev,d) => montrer(ev, html(d))).on("mousemove", placer).on("mouseleave", cacher);
+}
+addEventListener("scroll", cacher, {passive:true});
+
+/* Redessine un graphique quand son conteneur change de largeur */
+const redessins = [];
+function reactif(el, dessiner){
+  let l = 0, t;
+  const go = () => { const w = el.clientWidth; if (w && w !== l){ l = w; dessiner(w); } };
+  new ResizeObserver(() => { clearTimeout(t); t = setTimeout(go, 60); }).observe(el);
+  redessins.push(() => { l = 0; go(); });
+  go();
+}
+/* Les libellés sont placés d'après leur largeur mesurée : on redessine une fois les polices chargées */
+Promise.all([
+  document.fonts.load('600 14px "Barlow Condensed"'), document.fonts.load('12px "Public Sans"'),
+  document.fonts.load('16px "STIX Two Text"', "βΔ−≥")
+]).catch(() => {}).then(() => document.fonts.ready).then(() => redessins.forEach(f => f()));
+
+/* Formules : β_q, d_A, part_A, Δ, −, ≥ dans la police mathématique, indices en vrais indices */
+const RE_FORMULE = /(β_[qn]|d_[AB]|part_[AB]|Δ|−|≥|=)/;
+function texteFormule(sel, txt){
+  sel.text(null);
+  String(txt).split(RE_FORMULE).forEach(m => {
+    if (!m) return;
+    if (RE_FORMULE.test(m) && m.match(RE_FORMULE)[0] === m){
+      const [base, ind] = m.split("_");
+      sel.append("tspan").attr("class","math-svg").text(base);
+      if (ind){
+        sel.append("tspan").attr("class","math-svg").attr("dy","0.3em").style("font-size","0.82em").text(ind);
+        sel.append("tspan").attr("dy","-0.3em").text(" ");
+      }
+    } else sel.append("tspan").text(m);
+  });
+  return sel;
+}
+const formule = t => esc(t)
+  .replace(/β_([qn])\s*−\s*β_([qn])/g, '<span class="math">β<sub>$1</sub> − β<sub>$2</sub></span>')
+  .replace(/β_([qn])/g, '<span class="math">β<sub>$1</sub></span>');
+const legendeAires = () => `<div class="legende-ligne" style="margin:0 0 6px">${AIRES.map(a => `<span><i class="rond" style="background:${COUL[a]}"></i>${a}</span>`).join("")}</div>`;
+function largeurTextes(svg, items){
+  const g = svg.append("g").attr("aria-hidden","true");
+  items.forEach(([classe, txt]) => texteFormule(g.append("text").attr("class", classe), txt));
+  const w = d3.max(g.selectAll("text").nodes(), n => n.getBBox().width) || 0;
+  g.remove(); return w;
+}
+
+/* ---------- Outils de carte ---------- */
+const CC = R.carte_cadres;
+const ANNEES = CC.annees, ACTIFS_MIN = CC.actifs_min, PAL_CADRES = CC.couleurs;
+// Seuils en fraction, borne basse incluse comme dans le rapport
+const couleurCadres = d3.scaleThreshold().domain(CC.bornes_pct.map(b => b/100)).range(PAL_CADRES);
+const couleurDist = d3.scaleThreshold().domain([3,5,10,20]).range(["#006d2c","#31a354","#74c476","#bae4b3","#edf8e9"]);
+const couleurAnn = d3.scaleThreshold().domain([5,10,20,30]).range(["#2f3a42","#5f6b74","#919ca4","#c3cbd0","#eef1f2"]);
+
+function nouvelleCarte(id){
+  const m = L.map(id, {zoomSnap:0.25, zoomDelta:0.5, minZoom:8, maxZoom:12.5, scrollWheelZoom:false, keyboard:true, zoomControl:false});
+  L.control.zoom({position:"topright", zoomInTitle:"Zoomer", zoomOutTitle:"Dézoomer"}).addTo(m);
+  m.attributionControl.setPrefix("Leaflet");
+  m.attributionControl.addAttribution("Fond : Plan IGN · contours : IGN ADMIN EXPRESS");
+  L.control.scale({imperial:false, position:"bottomleft"}).addTo(m);
+  m.on("click", () => m.scrollWheelZoom.enable());
+  m.getContainer().addEventListener("mouseleave", () => m.scrollWheelZoom.disable());
+  return m;
+}
+function fondIGN(m, aire, actuel){
+  if (actuel) m.removeLayer(actuel);
+  const f = FONDS[aire];
+  return L.imageOverlay(f.uri, f.bornes, {className:"fond-ign", interactive:false, alt:"Fond Plan IGN, aire de " + aire}).addTo(m);
+}
+function caler(m, couche, aire, gauche){
+  m.setMaxBounds(L.latLngBounds(FONDS[aire].bornes).pad(0.15));
+  const etroite = m.getContainer().clientWidth < 500;
+  m.fitBounds(couche.getBounds(), {paddingTopLeft:[(gauche || 0) + 12, 12], paddingBottomRight:[etroite ? 12 : 48, 30], animate:false});
+}
+function boutonsAires(conteneurId, choisir, initiale){
+  const c = document.getElementById(conteneurId);
+  c.innerHTML = AIRES.map(a => `<button type="button" data-aire="${a}" aria-pressed="${a===initiale}"><span class="pastille" style="background:${COUL[a]}"></span>${a}</button>`).join("");
+  c.addEventListener("click", ev => {
+    const b = ev.target.closest("button"); if (!b) return;
+    c.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    choisir(b.dataset.aire);
+  });
+}
+function legendeClasses(el, couleurs, libelles){
+  el.innerHTML = couleurs.map((c,i) => `<div class="classe"><i style="background:${c}"></i><span>${libelles[i]}</span></div>`).join("");
+}
+
+/* ---------- 02 : part de cadres 1999-2022 ---------- */
+(function(){
+  const dernier = ANNEES.length - 1;
+  let aire = AIRES[0], rang = dernier, couche = null, fond = null, survolee = null, minuterie = null;
+  const m = nouvelleCarte("carte-temps");
+  const curseur = document.getElementById("carte-annee");
+  curseur.max = dernier;
+  const grad = document.getElementById("carte-graduations");
+  grad.innerHTML = ANNEES.map(a => `<span>${a}</span>`).join("");
+  const b = CC.bornes_pct;
+  legendeClasses(document.getElementById("carte-legende"), PAL_CADRES,
+    [`moins de ${b[0]} %`, ...b.slice(1).map((h,i) => `${b[i]} à ${h} %`), `${b[b.length-1]} % ou plus`]);
+  ecrire("carte-legende-pale", `<span><i style="background:${PAL_CADRES[3]};opacity:.35"></i>pâle&nbsp;: moins de ${ACTIFS_MIN} actifs à cette date, part peu précise</span>`);
+
+  const serieAire = {};
+  AIRES.forEach(a => {
+    const codes = [...new Set(COMMUNES.features.filter(f => f.properties.aire === a).map(f => f.properties.code_parent))];
+    serieAire[a] = ANNEES.map(an => {
+      let c = 0, t = 0;
+      codes.forEach(k => { const p = PARTS[k], n = p["actifs_"+an], v = p["part_cadres_"+an]; if (n != null && v != null){ c += v*n; t += n; } });
+      return {annee:an, part: c/t, actifs: t};
+    });
+  });
+  const serieUnite = code => ANNEES.map(an => ({annee:an, part: PARTS[code]["part_cadres_"+an], actifs: PARTS[code]["actifs_"+an]}));
+  const nomUnite = p => p.code_parent === "69123" ? "Lyon (" + p.nom_commune + ")" : p.nom_commune;
+
+  function style(f){
+    const an = ANNEES[rang], p = PARTS[f.properties.code_parent];
+    const petite = p["actifs_"+an] < ACTIFS_MIN;
+    return {fillColor: couleurCadres(p["part_cadres_"+an]), fillOpacity: petite ? 0.35 : 0.85, weight:0.6, color:"#000", className:"commune"};
+  }
+  function bulleCommune(f){
+    const p = f.properties, s = serieUnite(p.code_parent);
+    const lignes = s.map(d => `<tr${d.annee===ANNEES[rang]?' style="font-weight:700"':''}><td>${d.annee}</td><td style="text-align:right;padding-left:10px">${pct(d.part)}</td><td style="text-align:right;padding-left:10px;color:var(--discret)">${d.actifs < ACTIFS_MIN ? "peu précis" : ""}</td></tr>`).join("");
+    return `<div class="bulle-titre">${esc(nomUnite(p))}</div>${p.code_parent==="69123"?'<div style="color:var(--discret)">série de Lyon entière</div>':''}<table>${lignes}</table>`;
+  }
+  function dessinerAire(){
+    if (couche) m.removeLayer(couche);
+    fond = fondIGN(m, aire, fond);
+    couche = L.geoJSON({type:"FeatureCollection", features: COMMUNES.features.filter(f => f.properties.aire === aire)}, {
+      style,
+      onEachFeature(f, layer){
+        layer.bindTooltip(() => bulleCommune(f), {sticky:true, className:"bulle-carte", direction:"auto", opacity:1});
+        layer.on("mouseover", () => activer(f, layer));
+        layer.on("click", () => activer(f, layer));
+        layer.on("mouseout", () => { layer.getElement()?.classList.remove("survol"); });
+      }
+    }).addTo(m);
+    const bloc = document.getElementById("carte-millesime-bloc");
+    caler(m, couche, aire, getComputedStyle(bloc).position === "absolute" ? bloc.offsetWidth + 14 : 0);
+    document.getElementById("carte-aire-nom").textContent = "Aire de " + aire;
+    document.getElementById("carte-note-lyon").textContent = aire === "Lyon" ? "À Lyon, la série n'existe que pour la ville entière : les neuf arrondissements portent la même valeur." : "";
+    survolee = null; panneau();
+  }
+  function activer(f, layer){
+    couche.eachLayer(l => l.getElement()?.classList.remove("survol"));
+    layer.getElement()?.classList.add("survol");
+    layer.bringToFront();
+    survolee = f; panneau();
+  }
+  function changerAnnee(r){
+    rang = r; curseur.value = r; curseur.setAttribute("aria-valuetext", String(ANNEES[r]));
+    document.getElementById("carte-millesime").textContent = ANNEES[r];
+    grad.querySelectorAll("span").forEach((s,i) => s.classList.toggle("actif", i === r));
+    if (couche) couche.setStyle(style);
+    panneau();
+  }
+  function panneau(){
+    const nom = document.getElementById("carte-nom"), sous = document.getElementById("carte-sous");
+    const sa = serieAire[aire];
+    let su = null;
+    if (survolee){
+      const p = survolee.properties;
+      su = serieUnite(p.code_parent);
+      nom.textContent = nomUnite(p);
+      sous.textContent = (p.code_parent === "69123" ? "Arrondissement de Lyon, série de la ville entière. " : "") + "À " + F.f1(p.dist_centre_km) + " km du centre de l'aire.";
+    } else {
+      nom.textContent = "Ensemble de l'aire de " + aire;
+      sous.textContent = "Survolez ou touchez une commune pour afficher sa série.";
+    }
+    ecrire("carte-valeurs", `<tr><th></th><th style="text-align:right">${survolee ? "Commune" : ""}</th><th style="text-align:right">Aire</th></tr>` +
+      ANNEES.map((an,i) => {
+        const u = su ? su[i] : null;
+        const cu = u ? `<td class="${u.actifs < ACTIFS_MIN ? "pale" : ""}" title="${u.actifs < ACTIFS_MIN ? `moins de ${ACTIFS_MIN} actifs` : ""}">${pct(u.part)}</td>` : "<td></td>";
+        return `<tr class="${i===rang?"actif":""}"><th>${an}</th>${cu}<td>${pct(sa[i].part)}</td></tr>`;
+      }).join(""));
+    courbe(sa, su);
+  }
+  const elC = document.getElementById("carte-courbe");
+  function courbe(sa, su){
+    const W = elC.clientWidth || 280, H = 140, mg = {t:10,r:18,b:22,l:36};
+    const ymax = d3.max([...sa, ...(su||[])], d => d.part) || 0.3;
+    const x = d3.scaleLinear().domain([ANNEES[0], ANNEES[dernier]]).range([mg.l, W-mg.r]);
+    const y = d3.scaleLinear().domain([0, Math.max(0.1, ymax*1.12)]).nice(4).range([H-mg.b, mg.t]);
+    const svg = d3.select(elC).selectAll("svg").data([0]).join("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role","img")
+      .attr("aria-label","Série de la part de cadres");
+    svg.selectAll("*").remove();
+    svg.append("g").attr("class","grille").attr("transform",`translate(${mg.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(-(W-mg.l-mg.r)).tickFormat(""));
+    svg.append("g").attr("class","axe").attr("transform",`translate(${mg.l},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(v => F.f0(v*100)+" %").tickSize(0).tickPadding(5)).select(".domain").remove();
+    svg.append("g").attr("class","axe").attr("transform",`translate(0,${H-mg.b})`).call(d3.axisBottom(x).tickValues(ANNEES).tickFormat(d => d).tickSize(3));
+    svg.append("line").attr("x1", x(ANNEES[rang])).attr("x2", x(ANNEES[rang])).attr("y1", mg.t).attr("y2", H-mg.b).style("stroke","var(--encre)").attr("stroke-width",1).attr("opacity",.35);
+    const ligne = d3.line().x(d => x(d.annee)).y(d => y(d.part));
+    svg.append("path").datum(sa).attr("d", ligne).style("fill","none").style("stroke","var(--encre-2)").attr("stroke-width",1.6).attr("stroke-dasharray","4 3");
+    if (su){
+      svg.append("path").datum(su).attr("d", ligne).style("fill","none").style("stroke", COUL[aire]).attr("stroke-width",2.6);
+      svg.selectAll("circle.u").data(su).join("circle").attr("cx", d => x(d.annee)).attr("cy", d => y(d.part)).attr("r", 4)
+        .style("fill", d => d.actifs < ACTIFS_MIN ? "var(--surface)" : COUL[aire]).style("stroke", COUL[aire]).attr("stroke-width",1.6);
+    }
+  }
+
+  curseur.addEventListener("input", () => { arreter(); changerAnnee(+curseur.value); });
+  const bouton = document.getElementById("carte-lecture"), icone = document.getElementById("carte-lecture-icone");
+  function arreter(){
+    if (minuterie){ clearInterval(minuterie); minuterie = null; }
+    bouton.setAttribute("aria-pressed","false"); bouton.querySelector("span").textContent = "Lecture"; icone.setAttribute("d","M2 1 L11 6 L2 11 Z");
+  }
+  bouton.addEventListener("click", () => {
+    if (minuterie){ arreter(); return; }
+    bouton.setAttribute("aria-pressed","true"); bouton.querySelector("span").textContent = "Pause"; icone.setAttribute("d","M2 1 H5 V11 H2 Z M7 1 H10 V11 H7 Z");
+    if (rang === dernier) changerAnnee(0);
+    minuterie = setInterval(() => {
+      changerAnnee(rang + 1);
+      if (rang >= dernier) arreter();
+    }, reduit.matches ? 2200 : 1500);
+  });
+  boutonsAires("carte-aires", a => { aire = a; dessinerAire(); }, aire);
+  dessinerAire(); changerAnnee(rang);
+  new ResizeObserver(() => { m.invalidateSize(); panneau(); }).observe(document.getElementById("carte-temps"));
+})();
+
+/* ---------- 03 et 04 : données, profil des aires, carte de l'accès ---------- */
+(function(){
+  const nPriv = R.lycees.filter(l => l.secteur === "prive").length;
+  const nPaires = d3.sum(AIRES, a => R.n_paires[a]);
+  ecrire("chiffres-cles", [
+    [F.f0(COMMUNES.features.length), "communes et arrondissements"],
+    [F.f0(R.lycees.length), `lycées retenus, dont ${nPriv} privés sous contrat`],
+    [F.f0(nPaires), "paires de communes contiguës"],
+    [F.f0(R.n_fichiers_bruts), "fichiers bruts, contrôlés par sha256"]
+  ].map(([a,b]) => `<div><strong class="num">${a}</strong><span>${b}</span></div>`).join(""));
+
+  const prof = a => R.profil_aires.find(d => d.aire === a), acc = a => R.acces.find(d => d.aire === a);
+  ecrire("tab-profil", `<thead><tr><th>Aire</th><th style="text-align:right">Communes</th><th style="text-align:right">Lycées privés / lycées</th><th style="text-align:right">Privé, part des candidats au bac</th><th style="text-align:right">Écart d'IPS privé − public</th><th style="text-align:right">Communes exposées</th></tr></thead><tbody>` +
+    AIRES.map(a => { const d = prof(a), e = acc(a); return `<tr><td style="color:${COUL[a]};font-weight:700">${a}</td><td class="n" data-l="Communes">${F.f0(e.communes)}</td><td class="n" data-l="Lycées privés / lycées">${d.n_prive} / ${d.n_lycees} (${F.f0(d.part_prive*100)} %)</td><td class="n" data-l="Privé, part des candidats au bac">${pct(d.part_prive_candidats)}</td><td class="n" data-l="Écart d'IPS privé − public">${F.s1(d.ecart_ips)} points</td><td class="n" data-l="Communes exposées">${pct(e.part_exposees)}</td></tr>`; }).join("") + "</tbody>");
+  const [n, l, s] = ["Nantes","Lyon","Strasbourg"].map(prof);
+  ecrire("texte-profil", `<b>Lecture&nbsp;:</b> le privé est aussi répandu à Nantes qu'à Lyon (${F.f0(n.part_prive*100)}&nbsp;% et ${F.f0(l.part_prive*100)}&nbsp;% des lycées) mais moins sélectif (écart d'IPS de ${F.s1(n.ecart_ips)} contre ${F.s1(l.ecart_ips)} points)&nbsp;; à Strasbourg, il est rare (${F.f0(s.part_prive_candidats*100)}&nbsp;% des candidats au bac) et aussi sélectif qu'à Lyon.`);
+
+  let aire = AIRES[0], mode = "distance", couche = null, fond = null;
+  const m = nouvelleCarte("carte-acces");
+  // Plan dédié au-dessus des communes (overlayPane, z 400) et sous les infobulles (650)
+  m.createPane("lycees").style.zIndex = 480;
+  const lycees = {public: L.layerGroup().addTo(m), prive: L.layerGroup().addTo(m)};
+  const legende = document.getElementById("acces-legende");
+  function majLegende(){
+    if (mode === "distance") legendeClasses(legende, couleurDist.range(), ["< 3 km","3–5","5–10","10–20",'<span class="math">≥</span> 20 km']);
+    else legendeClasses(legende, couleurAnn.range(), ["0–5 km du centre","5–10","10–20","20–30",'<span class="math">≥</span> 30 km']);
+  }
+  const style = f => ({fillColor: mode === "distance" ? couleurDist(f.properties.dist_lyc_prive_min) : couleurAnn(f.properties.dist_centre_km),
+    fillOpacity: 0.78, weight: 0.6, color:"#000", className:"commune"});
+  function dessiner(){
+    if (couche) m.removeLayer(couche);
+    fond = fondIGN(m, aire, fond);
+    couche = L.geoJSON({type:"FeatureCollection", features: COMMUNES.features.filter(f => f.properties.aire === aire)}, {
+      style,
+      onEachFeature(f, layer){
+        const p = f.properties;
+        layer.bindTooltip(() => `<div class="bulle-titre">${esc(p.nom_commune)}</div>
+          Lycée privé le plus proche : <b>${F.f1(p.dist_lyc_prive_min)} km</b><br>
+          Lycées privés à 5 km : ${p.n_lyc_prive_5km} ${p.n_lyc_prive_5km > 0 ? "(exposée)" : "(non exposée)"}<br>
+          Distance au centre : ${F.f1(p.dist_centre_km)} km<br>
+          Part de cadres 2022 : ${pct(p.part_cadres_2022)}`, {sticky:true, className:"bulle-carte", opacity:1});
+        layer.on("mouseover", () => { layer.getElement()?.classList.add("survol"); });
+        layer.on("mouseout", () => { layer.getElement()?.classList.remove("survol"); });
+      }
+    }).addTo(m);
+    lycees.public.clearLayers(); lycees.prive.clearLayers();
+    R.lycees.filter(l => l.aire === aire).forEach(l => {
+      L.circleMarker([l.lat, l.lon], {pane:"lycees", radius: 6.5, fillColor: SECT[l.secteur], fillOpacity: 1, weight: 2, color:"#ffffff", className:"lycee"})
+        .bindTooltip(`<div class="bulle-titre">${esc(l.nom)}</div>${l.secteur === "prive" ? "Privé sous contrat" : "Public"}<br>IPS : ${l.ips == null ? "—" : F.f1(l.ips)}<br>IVAL (accès 2nde-bac, moyenne 2012-2022) : ${l.ival == null ? "—" : F.s2(l.ival)}`, {className:"bulle-carte", opacity:1})
+        .addTo(lycees[l.secteur]);
+    });
+    caler(m, couche, aire);
+  }
+  boutonsAires("acces-aires", a => { aire = a; dessiner(); }, aire);
+  const modes = document.getElementById("acces-mode");
+  modes.addEventListener("click", ev => {
+    const b = ev.target.closest("button"); if (!b) return;
+    modes.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    mode = b.id === "acces-mode-distance" ? "distance" : "anneaux";
+    couche.setStyle(style); majLegende();
+  });
+  ["public","prive"].forEach(s => document.getElementById("acces-"+s).addEventListener("change", e => {
+    if (e.target.checked) lycees[s].addTo(m); else m.removeLayer(lycees[s]);
+  }));
+  majLegende(); dessiner();
+  new ResizeObserver(() => m.invalidateSize()).observe(document.getElementById("carte-acces"));
+})();
+
+/* ---------- 05 : gradient et schéma des paires ---------- */
+const GRADIENT = AIRES.map(a => {
+  const g = R.gradient.filter(d => d.aire === a);
+  return {aire:a, centre:g[0], loin:g[g.length-1]};
+});
+(function(){
+  const ANN = [...new Set(R.gradient.map(d => d.anneau))];
+  ecrire("gradient-legende", legendeAires());
+  const el = document.getElementById("fig-gradient");
+  reactif(el, W => {
+    const H = 250, mg = {t:22, r:16, b:46, l:44};
+    const x = d3.scalePoint().domain(ANN).range([mg.l + 24, W - mg.r - 24]);
+    const y = d3.scaleLinear().domain([0, d3.max(R.gradient, d => d.part_cadres_2022)*1.1]).nice(4).range([H-mg.b, mg.t]);
+    const svg = d3.select(el).selectAll("svg").data([0]).join("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("role","img").attr("aria-label","Part de cadres par anneau de distance au centre, par aire");
+    svg.selectAll("*").remove();
+    svg.append("g").attr("class","grille").attr("transform",`translate(${mg.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(-(W-mg.l-mg.r)).tickFormat(""));
+    svg.append("g").attr("class","axe").attr("transform",`translate(${mg.l},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(v => F.f0(v*100)+" %"));
+    svg.append("g").attr("class","axe").attr("transform",`translate(0,${H-mg.b})`).call(d3.axisBottom(x).tickSize(0).tickPadding(8).tickFormat(t => t.replace(" km et plus", "+").replace(" km", "")));
+    svg.append("text").attr("class","titre-axe").attr("x",W-mg.r).attr("y",H-6).attr("text-anchor","end").text("distance au centre de l'aire (km)");
+    AIRES.forEach(a => {
+      const d = R.gradient.filter(g => g.aire === a);
+      svg.append("path").datum(d).attr("d", d3.line().x(g => x(g.anneau)).y(g => y(g.part_cadres_2022))).style("fill","none").style("stroke",COUL[a]).attr("stroke-width",2);
+      const c = svg.append("g").selectAll("circle").data(d).join("circle").attr("cx", g => x(g.anneau)).attr("cy", g => y(g.part_cadres_2022)).attr("r",5)
+        .style("fill", g => g.communes < 5 ? "var(--surface)" : COUL[a]).style("stroke",COUL[a]).attr("stroke-width",2);
+      survol(c, g => `<div class="bulle-titre">${a} · ${g.anneau}</div>Part de cadres 2022 : ${pct(g.part_cadres_2022)}<br>${g.communes} commune${g.communes>1?"s":""}`);
+    });
+  });
+  const r = GRADIENT.map(d => d.centre.part_cadres_2022 / d.loin.part_cadres_2022);
+  const petits = GRADIENT.filter(d => d.centre.communes <= 2).map(d => d.aire);
+  ecrire("texte-gradient", `<b>Lecture&nbsp;:</b> ${F.f1(d3.min(r))} à ${F.f1(d3.max(r))} fois plus de cadres à moins de 5&nbsp;km du centre qu'au-delà de 30&nbsp;km (point creux&nbsp;: moins de 5 communes).`);
+  ecrire("note-gradient", petits.length ? `Gradient&nbsp;: à ${listeAires(petits)}, l'anneau 0-5 km ne compte que la commune-centre et une voisine.` : "");
+
+  ecrire("note-paires", "Paires par aire&nbsp;: " + AIRES.map(a => `${a} ${F.f0(R.n_paires[a])}`).join(", ") + ".");
+  const el2 = document.getElementById("schema-paires");
+  const W = 380, H = 330;
+  const svg = d3.select(el2).append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("role","img")
+    .attr("aria-label","Schéma : deux communes contiguës A et B, la distance de chacune au lycée privé le plus proche, et les deux écarts comparés");
+  const A = "M50,62 L150,48 L200,92 L196,176 L160,222 L70,210 L40,142 Z";
+  const B = "M200,92 L268,60 L336,90 L344,182 L296,230 L200,222 L160,222 L196,176 Z";
+  svg.append("path").attr("d",A).style("fill", PAL_CADRES[4]).attr("fill-opacity",.5).attr("class","trait-schema").attr("stroke-width",1.2);
+  svg.append("path").attr("d",B).style("fill", PAL_CADRES[2]).attr("fill-opacity",.5).attr("class","trait-schema").attr("stroke-width",1.2);
+  svg.append("path").attr("d","M200,92 L196,176 L160,222").style("fill","none").style("stroke","var(--encre)").attr("stroke-width",4);
+  const cA = [118,140], cB = [282,152], lyc = [26,34];
+  const croix = (g,[x,y]) => g.append("path").attr("d",`M${x-5},${y} H${x+5} M${x},${y-5} V${y+5}`).style("stroke","var(--encre)").attr("stroke-width",2);
+  [cA,cB].forEach(c => croix(svg,c));
+  [cA,cB].forEach(c => svg.append("line").attr("x1",c[0]).attr("y1",c[1]).attr("x2",lyc[0]).attr("y2",lyc[1]).style("stroke",SECT.prive).attr("stroke-width",1.8).attr("stroke-dasharray","5 4"));
+  svg.append("circle").attr("cx",lyc[0]).attr("cy",lyc[1]).attr("r",8).style("fill",SECT.prive).style("stroke","#fff").attr("stroke-width",2);
+  svg.append("text").attr("class","texte-svg").attr("x",42).attr("y",21).text("lycée privé sous contrat le plus proche");
+  texteFormule(svg.append("text").attr("class","etiq").attr("x",32).attr("y",64).attr("text-anchor","end"), "d_A");
+  texteFormule(svg.append("text").attr("class","etiq").attr("x",64).attr("y",41), "d_B");
+  svg.append("text").attr("class","etiq").attr("x",70).attr("y",128).style("font-size","22px").text("A");
+  svg.append("text").attr("class","etiq").attr("x",298).attr("y",124).style("font-size","22px").text("B");
+  svg.append("line").attr("x1",160).attr("y1",226).attr("x2",160).attr("y2",238).style("stroke","var(--encre)").attr("stroke-width",1);
+  svg.append("text").attr("class","texte-svg").attr("x",160).attr("y",252).attr("text-anchor","middle").text("limite commune entre A et B");
+  const t = svg.append("g").attr("transform","translate(14,280)");
+  texteFormule(t.append("text").attr("class","etiq").attr("y",0), "Δ accès = d_A − d_B   (km)");
+  texteFormule(t.append("text").attr("class","etiq").attr("y",22), "Δ cadres = part_A − part_B   (points)");
+  texteFormule(t.append("text").attr("class","texte-svg").attr("y",42), "contrôles : Δ distance au centre, Δ log densité");
+})();
+
+/* ---------- Graphique à intervalles ---------- */
+function intervalles(el, W, lignes, opts){
+  const o = Object.assign({rowH:30, unite:"", fmt:F.f2, xTitre:""}, opts);
+  const svg = d3.select(el).selectAll("svg").data([0]).join("svg").attr("role","img").attr("aria-label", o.aria);
+  svg.selectAll("*").remove();
+  const larg = largeurTextes(svg, lignes.map(d => ["etiq", d.etiq]));
+  const mg = {t:8, r:16, b:50, l: Math.ceil(larg) + 24};
+  const H = mg.t + o.rowH*lignes.length + mg.b;
+  svg.attr("viewBox",`0 0 ${W} ${H}`);
+  const vals = lignes.flatMap(d => [d.v, d.b, d.h]).filter(v => v != null).concat([0]);
+  const [lo, hi] = d3.extent(vals), pad = (hi-lo)*0.08 || 0.1;
+  const x = d3.scaleLinear().domain([lo-pad, hi+pad]).nice(5).range([mg.l, W-mg.r]);
+  const utile = W - mg.l - mg.r, nt = utile < 170 ? 3 : utile < 300 ? 4 : 6;
+  svg.append("g").attr("class","grille").attr("transform",`translate(0,${H-mg.b})`).call(d3.axisBottom(x).ticks(nt).tickSize(-(H-mg.b-mg.t)).tickFormat(""));
+  svg.append("g").attr("class","axe").attr("transform",`translate(0,${H-mg.b})`).call(d3.axisBottom(x).ticks(nt).tickFormat(F.f1));
+  svg.append("text").attr("class","titre-axe").attr("x",W-mg.r).attr("y",H-6).attr("text-anchor","end").text(o.xTitre);
+  svg.append("line").attr("class","ligne-zero").attr("x1",x(0)).attr("x2",x(0)).attr("y1",mg.t).attr("y2",H-mg.b);
+  const g = svg.append("g").selectAll("g").data(lignes).join("g").attr("transform",(d,i) => `translate(0,${mg.t + o.rowH*i + o.rowH/2})`);
+  g.append("text").attr("class","etiq").attr("x",6).attr("y",5).each(function(d){ texteFormule(d3.select(this), d.etiq); });
+  g.filter(d => d.b != null).append("line").attr("x1", d => x(d.b)).attr("x2", d => x(d.h)).style("stroke", d => d.couleur).attr("stroke-width",2.6);
+  g.filter(d => d.b != null).selectAll("line.bout").data(d => [d.b,d.h].map(v => ({v, c:d.couleur}))).join("line").attr("x1",e=>x(e.v)).attr("x2",e=>x(e.v)).attr("y1",-5).attr("y2",5).style("stroke",e=>e.c).attr("stroke-width",1.6);
+  g.append("circle").attr("cx", d => x(d.v)).attr("r", 5.5).style("stroke", d => d.couleur).attr("stroke-width",2)
+    .style("fill", d => exclutZero(d.b,d.h) ? d.couleur : "var(--surface)");
+  g.append("rect").attr("x",0).attr("width",W).attr("y",-o.rowH/2).attr("height",o.rowH).style("fill","transparent");
+  survol(g, d => `<div class="bulle-titre">${formule(d.etiq)}</div>${o.fmt(d.v)} ${o.unite}<br>IC à 95 % : ${ic(d.b,d.h,o.fmt)}${d.info ? "<br>"+d.info : ""}`);
+}
+
+/* ---------- 06 : H1 et H2 ---------- */
+const principale = a => R.h1_principale.find(d => d.aire === a);
+const verdictH1 = a => R.h1_verdict.find(d => d.aire === a);
+const libAnneau = d => d.haut_km >= R.borne_ouverte ? `${d.bas_km} km et plus` : `${d.bas_km}–${d.haut_km} km`;
+// Gradient centre-périphérie, pour situer l'intervalle de H1 : moindres carrés sur les communes, sans pondération
+function penteCentre(a){
+  const c = COMMUNES.features.map(f => f.properties).filter(q => q.aire === a && q.part_cadres_2022 != null);
+  const md = d3.mean(c, q => q.dist_centre_km), mp = d3.mean(c, q => q.part_cadres_2022);
+  return d3.sum(c, q => (q.dist_centre_km - md) * (q.part_cadres_2022 - mp)) / d3.sum(c, q => (q.dist_centre_km - md) ** 2);
+}
+(function(){
+  const cont = document.getElementById("fig-nuage");
+  const caseIC = document.getElementById("nuage-ic");
+  const ymax = d3.max(AIRES.flatMap(a => R.h1_nuage[a]), d => Math.abs(d.cadres_residuel*100)) * 1.15;
+  function construire(){
+    cont.innerHTML = "";
+    AIRES.forEach(a => {
+      const p = principale(a), v = verdictH1(a);
+      const div = document.createElement("div"); div.className = "panneau-fig";
+      div.innerHTML = `<h4 style="color:${COUL[a]}">${a}<span class="verdict" style="color:var(--encre)">${v.verdict}</span>${v.mention ? `<small>${v.mention}</small>` : ""}</h4><div class="unite">pente ${F.s2(p.pente*100)} point par km ${ic(p.ic_bas*100,p.ic_haut*100,F.s2)} · ${F.f0(p.n_paires)} paires</div><div class="graphe"></div>`;
+      cont.appendChild(div);
+      const el = div.querySelector(".graphe");
+      const pts = R.h1_nuage[a];
+      reactif(el, W => {
+        const H = Math.round(Math.min(250, Math.max(210, W*0.7))), mg = {t:28,r:12,b:46,l:44};
+        const xm = d3.max(pts, d => Math.abs(d.acces_residuel))*1.08;
+        const x = d3.scaleLinear().domain([-xm,xm]).nice(4).range([mg.l, W-mg.r]);
+        const y = d3.scaleLinear().domain([-ymax,ymax]).nice(4).range([H-mg.b, mg.t]);
+        const svg = d3.select(el).selectAll("svg").data([0]).join("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("role","img").attr("aria-label",`Nuage par classes des paires, aire de ${a}`);
+        svg.selectAll("*").remove();
+        svg.append("g").attr("class","grille").attr("transform",`translate(${mg.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W-mg.l-mg.r)).tickFormat(""));
+        svg.append("g").attr("class","axe").attr("transform",`translate(${mg.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(F.f1));
+        svg.append("g").attr("class","axe").attr("transform",`translate(0,${H-mg.b})`).call(d3.axisBottom(x).ticks(5).tickFormat(F.f0));
+        svg.append("text").attr("class","titre-axe").attr("x",W-mg.r).attr("y",H-6).attr("text-anchor","end").text("écart d'accès résiduel (km)");
+        svg.append("text").attr("class","titre-axe").attr("x",2).attr("y",13).text("écart de part de cadres résiduel (points)");
+        svg.append("line").attr("class","ligne-zero").attr("x1",x(0)).attr("x2",x(0)).attr("y1",mg.t).attr("y2",H-mg.b).attr("opacity",.35);
+        svg.append("line").attr("class","ligne-zero").attr("x1",mg.l).attr("x2",W-mg.r).attr("y1",y(0)).attr("y2",y(0)).attr("opacity",.35);
+        const [x0,x1] = x.domain();
+        if (caseIC.checked){
+          const poly = [[x0,p.ic_bas*100*x0],[x0,p.ic_haut*100*x0],[0,0],[x1,p.ic_haut*100*x1],[x1,p.ic_bas*100*x1],[0,0]];
+          svg.append("path").attr("d", "M" + poly.map(([u,v]) => x(u)+","+y(v)).join("L") + "Z").style("fill",COUL[a]).attr("fill-opacity",.14);
+        }
+        svg.append("line").attr("x1",x(x0)).attr("y1",y(p.pente*100*x0)).attr("x2",x(x1)).attr("y2",y(p.pente*100*x1)).style("stroke",COUL[a]).attr("stroke-width",2.2);
+        const c = svg.append("g").selectAll("circle").data(pts).join("circle").attr("cx",d=>x(d.acces_residuel)).attr("cy",d=>y(d.cadres_residuel*100)).attr("r",4.6)
+          .style("fill",COUL[a]).attr("fill-opacity",.85).style("stroke","var(--surface)").attr("stroke-width",1);
+        survol(c, d => `<div class="bulle-titre">${a} · classe ${d.classe+1} sur 20</div>Écart d'accès résiduel : ${F.f2(d.acces_residuel)} km<br>Écart de part de cadres résiduel : ${F.s2(d.cadres_residuel*100)} point<br>${d.n_paires} paires`);
+      });
+    });
+  }
+  caseIC.addEventListener("change", construire);
+  construire();
+
+  ecrire("tab-h1-verdict", `<thead><tr><th>Aire</th><th style="text-align:right">Pente principale (point/km)</th><th style="text-align:right">Pente secondaire (point/lycée)</th><th style="text-align:right">Anneaux comparés</th><th>Verdict</th></tr></thead><tbody>` +
+    AIRES.map(a => {
+      const p = principale(a), s = R.h1_secondaire.find(d => d.aire === a), v = verdictH1(a);
+      return `<tr><td style="color:${COUL[a]};font-weight:700">${a}</td><td class="n" data-l="Pente principale (point/km)">${F.s2(p.pente*100)} ${ic(p.ic_bas*100,p.ic_haut*100,F.f2)}</td><td class="n" data-l="Pente secondaire (point/lycée)">${F.s2(s.pente*100)} ${ic(s.ic_bas*100,s.ic_haut*100,F.f2)}</td><td class="n" data-l="Anneaux comparés">${v.anneaux_compares}</td><td data-l="Verdict"><span class="verdict">${v.verdict}</span>${v.mention ? `<br><small>${v.mention}</small>` : ""}</td></tr>`;
+    }).join("") + "</tbody>");
+
+  const nuls = AIRES.filter(a => verdictH1(a).mention === "résultat nul établi");
+  const pp = AIRES.map(principale);
+  const recouvrent = pp.every(u => pp.every(v => u.ic_bas <= v.ic_haut && v.ic_bas <= u.ic_haut));
+  const lyon = document.getElementById("texte-h1-lyon");
+  lyon.innerHTML = nuls.map(a => {
+    const p = principale(a), g = penteCentre(a);
+    return `<p><b>${a}&nbsp;: au sens de notre règle, le résultat nul est établi, mais l'intervalle n'exclut pas un écart de quelques points.</b> «&nbsp;Établi&nbsp;» dit que les données ne distinguent pas l'association de zéro, pas qu'elle est petite&nbsp;: ` +
+      (p.ic_bas <= g ? `l'intervalle ${ic(p.ic_bas*100,p.ic_haut*100,F.s2)} point par km comprend une pente de l'ordre du gradient centre-périphérie lui-même (environ ${F.f1(-g*100)} point de cadres de moins par km d'éloignement du centre), et ` : "") +
+      `5&nbsp;km plus près d'un lycée privé peuvent aller de pair avec jusqu'à ${F.f1(-5*p.ic_bas*100)} points de cadres de plus.</p>`;
+  }).join("") + `<p><b>H2 (descriptive).</b> ${recouvrent ? "Les intervalles des trois aires se recouvrent&nbsp;: rien ne distingue Nantes." : "Certains intervalles ne se recouvrent pas."}</p>`;
+
+  const phrases = [];
+  nuls.forEach(a => {
+    const v = verdictH1(a), p = principale(a), g = penteCentre(a);
+    phrases.push(`<b>${a}&nbsp;: «&nbsp;infirmée&nbsp;» (résultat nul établi).</b> L'intervalle contient zéro et les ${v.anneaux_compares} anneaux comparés concordent. Pour 5&nbsp;km de moins jusqu'au lycée privé, l'écart va de ${F.s1(-5*p.ic_haut*100)} à ${F.s1(-5*p.ic_bas*100)} points de cadres. «&nbsp;Infirmée&nbsp;» nomme ici un lien qu'on ne distingue pas de zéro, pas un lien de sens contraire. Gradient centre-périphérie&nbsp;: pente simple de la part de cadres des communes de l'aire sur leur distance au centre, ${F.s2(g*100)} point par km.`);
+  });
+  const sansAnneau = AIRES.filter(a => verdictH1(a).verdict === "non concluante" && verdictH1(a).anneaux_compares === 0);
+  if (sansAnneau.length)
+    phrases.push(`<b>${sansAnneau.join(" et ")}&nbsp;: «&nbsp;non concluante&nbsp;».</b> Sans anneau estimable aux deux rayons, la règle interdit de parler de résultat nul établi.`);
+  AIRES.filter(a => verdictH1(a).mention !== "résultat nul établi" && !sansAnneau.includes(a)).forEach(a => {
+    const v = verdictH1(a);
+    phrases.push(`<b>${a}&nbsp;: «&nbsp;${v.verdict}${v.mention ? " (" + v.mention + ")" : ""}&nbsp;».</b>`);
+  });
+  const celEx = R.h1_anneaux.filter(d => d.estimable && exclutZero(d.ic_bas, d.ic_haut));
+  const nCel = R.h1_anneaux.filter(d => d.estimable).length;
+  const libC = d => `${d.aire}, ${libAnneau(d)}, rayon ${d.rayon_km} km&nbsp;: ${F.s1(d.ecart*100)} points ${ic(d.ic_bas*100, d.ic_haut*100, F.s1)}`;
+  phrases.push(celEx.length === 0 ? `Aucune des ${enLettres(nCel)} cellules d'anneau estimables n'exclut zéro.` :
+    `${celEx.length === 1 ? "Une seule" : celEx.length} des ${enLettres(nCel)} cellules d'anneau estimables ${celEx.length === 1 ? "exclut" : "excluent"} zéro&nbsp;: ${celEx.map(libC).join("&nbsp;; ")}.`);
+  phrases.push(`<b>H2 (descriptive).</b> Pentes principales de ${F.f2(d3.min(pp, d => d.pente*100))} à ${F.f2(d3.max(pp, d => d.pente*100))} point par km.`);
+  phrases.push("<b>Nuages.</b> Chaque paire compte dans les deux sens, d'où la symétrie autour de zéro&nbsp;; même échelle verticale pour les trois aires.");
+  ecrire("texte-h1-verdict", phrases.map(t => `<p class="texte">${t}</p>`).join(""));
+})();
+
+/* ---------- 07 : H3 ---------- */
+const coefH3 = c => R.h3_estimation.find(e => e.portee === "ensemble" && e.coefficient === c);
+const verdictH3 = R.h3_verdict.find(d => d.index === "ensemble");
+(function(){
+  const fi = R.fiabilite_ival.find(d => d.index === "ensemble");
+  const q = coefH3("β_q"), n = coefH3("β_n"), dq = coefH3("β_q − β_n");
+  document.getElementById("h3-pop").textContent = fi.n_communes_h3;
+  document.getElementById("h3-est").textContent = q.n_communes;
+
+  const lignes = [q, n, dq].map(d => ({etiq: d.coefficient, couleur: "var(--encre-2)", v:d.estimation, b:d.ic_bas, h:d.ic_haut, info:`${d.n_communes} communes, ${d.n_grappes} grappes`}));
+  const el = document.getElementById("fig-h3-beta");
+  reactif(el, W => intervalles(el, W, lignes, {rowH:42, unite:"point pour un écart-type", xTitre:"points pour un écart-type", aria:"Estimations de β_q, β_n et de leur différence, trois aires ensemble"}));
+
+  const SEUIL = 0.5;
+  const sousSeuil = R.fiabilite_ival.filter(d => d.index !== "ensemble" && d.r_spearman_brown < SEUIL).map(d => d.index);
+  const ligne = (nom, d) => `<tr><th>${nom}</th><td>${F.s2(d.estimation)}</td><td>${ic(d.ic_bas,d.ic_haut,F.f2)}</td></tr>`;
+  ecrire("texte-h3-verdict",
+    `<span class="kick">Verdict selon les règles fixées avant les résultats</span>
+     <p><span class="verdict plein">${verdictH3.verdict}</span> &nbsp;trois aires ensemble</p>
+     <table class="valeurs" style="max-width:420px">${ligne("<span class='math'>β<sub>q</sub></span> qualité", q)}${ligne("<span class='math'>β<sub>n</sub></span> nombre", n)}${ligne("<span class='math'>β<sub>q</sub> − β<sub>n</sub></span>", dq)}</table>
+     <p class="note">Fiabilité de l'IVAL&nbsp;: ${F.f3(verdictH3.fiabilite)}, au-dessus du seuil de 0,5&nbsp;: H3 est testable${sousSeuil.length ? ` (sous 0,5 à ${listeAires(sousSeuil)}, valeurs par aire descriptives)` : ""}.</p>`);
+
+  ecrire("texte-h3-regle", `Règle fixée avant les résultats&nbsp;: H3 est «&nbsp;infirmée&nbsp;» si l'intervalle de <span class='math'>β<sub>q</sub></span> ou celui de <span class='math'>β<sub>q</sub> − β<sub>n</sub></span> est entièrement sous zéro.`);
+  const diff = R.h3_robustesse.filter(d => d.coefficient === "β_q − β_n" && !/principale/i.test(d.variante));
+  const minus = t => /^[A-Z][a-zé]/.test(t) ? t[0].toLowerCase() + t.slice(1) : t;
+  ecrire("texte-h3-robu", (diff.every(d => d.ic_haut < 0) ? `<strong>Le verdict tient</strong> avec d'autres mesures de la qualité` : "Autres mesures de la qualité") + "&nbsp;: " +
+    diff.map(d => `${minus(d.variante)}, <span class="math">β<sub>q</sub> − β<sub>n</sub></span> = ${F.s2(d.estimation)} ${ic(d.ic_bas,d.ic_haut,F.f2)}`).join("&nbsp;; ") +
+    `. Mais ce test penche contre H3&nbsp;: l'erreur de mesure de l'IVAL tire <span class="math">β<sub>q</sub></span> vers zéro, pas <span class="math">β<sub>n</sub></span>, et le stock de lycées de 2026 (des ouvertures récentes dans des communes en croissance) gonfle <span class="math">β<sub>n</sub></span>.`);
+})();
+
+/* ---------- 08 : H4 ---------- */
+const H4_PRIVE = R.h4.filter(d => /privé/i.test(d.mesure));
+const recoupe = (u, v) => u.ic_bas <= v.ic_haut && v.ic_bas <= u.ic_haut;
+const H4_DETACHE = AIRES.some(a => { const l = H4_PRIVE.find(d => d.aire === a); return R.h4.filter(d => d.aire === a && d !== l).some(d => !recoupe(l, d)); });
+(function(){
+  const el = document.getElementById("fig-h4");
+  const moyenne = m => d3.mean(R.h4.filter(d => d.mesure === m), d => d.pente);
+  const ordre = [...new Set(R.h4.map(d => d.mesure))].sort((a,b) => moyenne(b) - moyenne(a));
+  el.insertAdjacentHTML("beforebegin", legendeAires());
+  reactif(el, W => {
+    const svg = d3.select(el).selectAll("svg").data([0]).join("svg").attr("role","img").attr("aria-label","Pentes des paires par infrastructure et par aire");
+    svg.selectAll("*").remove();
+    const larg = largeurTextes(svg, ordre.map(m => ["etiq", m]));
+    const etroit = larg + 24 > W*0.34;
+    const haut = etroit ? 24 : 0;
+    const rowH = 54 + haut, mg = {t:6, r:18, b:46, l: etroit ? 24 : Math.ceil(larg) + 24};
+    const H = mg.t + rowH*ordre.length + mg.b;
+    svg.attr("viewBox",`0 0 ${W} ${H}`);
+    const vals = R.h4.flatMap(d => [d.ic_bas, d.ic_haut]).map(v => v*100).concat([0]);
+    const x = d3.scaleLinear().domain(d3.extent(vals)).nice(6).range([mg.l, W-mg.r]);
+    const y = d3.scaleBand().domain(ordre).range([mg.t, H-mg.b]);
+    const dy = d3.scalePoint().domain(AIRES).range([-13, 13]);
+    const nt = (W - mg.l - mg.r) < 460 ? 5 : 8;
+    ordre.forEach((m,i) => { if (i % 2 === 0) svg.append("rect").attr("class","bande-retenue").attr("x",0).attr("width",W).attr("y",y(m)).attr("height",rowH).attr("opacity",.6); });
+    // Grille et zéro tracés seulement dans la bande des points, pas sous les libellés
+    const grille = svg.append("g").attr("class","grille");
+    ordre.forEach(m => x.ticks(nt).forEach(v => grille.append("line").attr("x1",x(v)).attr("x2",x(v)).attr("y1",y(m)+haut).attr("y2",y(m)+rowH)));
+    ordre.forEach(m => svg.append("line").attr("class","ligne-zero").attr("x1",x(0)).attr("x2",x(0)).attr("y1",y(m)+haut).attr("y2",y(m)+rowH));
+    svg.append("g").attr("class","axe").attr("transform",`translate(0,${H-mg.b})`).call(d3.axisBottom(x).ticks(nt).tickFormat(F.f1));
+    svg.append("text").attr("class","titre-axe").attr("x",W-mg.r).attr("y",H-6).attr("text-anchor","end").text("points de part de cadres pour un écart-type d'accès en plus");
+    svg.append("g").selectAll("text").data(ordre).join("text").attr("class","etiq").attr("x", 8).attr("y", m => y(m) + (etroit ? 17 : rowH/2 + 5)).text(m => m);
+    const g = svg.append("g").selectAll("g").data(R.h4).join("g").attr("transform", d => `translate(0,${y(d.mesure) + haut + (rowH-haut)/2 + dy(d.aire)})`);
+    g.append("line").attr("x1", d => x(d.ic_bas*100)).attr("x2", d => x(d.ic_haut*100)).style("stroke", d => COUL[d.aire]).attr("stroke-width",2.4);
+    g.append("circle").attr("cx", d => x(d.pente*100)).attr("r",5).style("stroke", d => COUL[d.aire]).attr("stroke-width",2)
+      .style("fill", d => exclutZero(d.ic_bas,d.ic_haut) ? COUL[d.aire] : "var(--surface)");
+    g.append("rect").attr("x",0).attr("width",W).attr("y",-6).attr("height",12).style("fill","transparent");
+    survol(g, d => `<div class="bulle-titre">${d.mesure} · ${d.aire}</div>Pente : ${F.s2(d.pente*100)} point par écart-type<br>IC à 95 % : ${ic(d.ic_bas*100,d.ic_haut*100,F.f2)}<br>${F.f0(d.n_paires)} paires`);
+  });
+
+  const nEx = R.h4.filter(d => exclutZero(d.ic_bas, d.ic_haut));
+  const nAutres = ordre.length - 1;
+  ecrire("texte-h4", `<b>Lecture&nbsp;:</b> ` + (H4_DETACHE ? "" : `dans chaque aire, l'intervalle du lycée privé recoupe celui de chacune des ${enLettres(nAutres)} autres infrastructures&nbsp;; `) +
+    "faute de règle de verdict fixée avant l'estimation, H4 reste descriptive.");
+  ecrire("texte-h4-detail", `Les pentes du lycée privé vont de ${F.s2(d3.min(H4_PRIVE, d => d.pente)*100)} à ${F.s2(d3.max(H4_PRIVE, d => d.pente)*100)} point par écart-type` +
+    (H4_PRIVE.every(d => !exclutZero(d.ic_bas,d.ic_haut)) ? ", sans qu'aucun intervalle n'exclue zéro" : "") + ". " +
+    `${nEx.length === 1 ? "Une seule" : nEx.length === 0 ? "Aucune" : nEx.length} pente${nEx.length > 1 ? "s" : ""} sur ${R.h4.length} ${nEx.length > 1 ? "excluent" : nEx.length === 0 ? "n’exclut" : "exclut"} zéro` +
+    (nEx.length ? "&nbsp;: " + nEx.map(d => `${d.mesure.toLowerCase()} à ${d.aire}, ${F.s2(d.pente*100)} ${ic(d.ic_bas*100,d.ic_haut*100,F.f2)}`).join("&nbsp;; ") : "") + ".");
+})();
+
+/* ---------- 09 : robustesse ---------- */
+(function(){
+  const PRINCIPALE = "Spécification principale";
+  const variantes = [...new Set(R.robustesse.map(d => d.variante))];
+  const nVar = variantes.filter(v => v !== PRINCIPALE).length;
+  const nFig = R.variantes_figure.filter(v => v !== PRINCIPALE).length;
+  let n = 0, nEx = 0;
+  const ligne = v => {
+    const cel = AIRES.map(a => R.robustesse.find(d => d.variante === v && d.aire === a));
+    const ext = d3.extent(cel.filter(Boolean).flatMap(d => [d.pente, d.ic_bas, d.ic_haut]).filter(x => x != null).concat([0]));
+    const sx = d3.scaleLinear().domain([ext[0] - (ext[1]-ext[0])*0.06, ext[1] + (ext[1]-ext[0])*0.06]).range([4, 156]);
+    const cases = cel.map(d => {
+      if (!d){
+        const raison = /prix/i.test(v) ? "Alsace-Moselle hors DVF" : /frontière/i.test(v) ? "variante propre à Strasbourg" : "non calculée";
+        return `<td class="cel"><span class="v">—</span><span class="vide" style="display:block">${raison}</span></td>`;
+      }
+      const avecIC = d.ic_bas != null, ex = exclutZero(d.ic_bas, d.ic_haut);
+      if (avecIC && v !== PRINCIPALE){ n++; if (ex) nEx++; }
+      const trait = avecIC ? `<line x1="${sx(d.ic_bas)}" x2="${sx(d.ic_haut)}" y1="8" y2="8" style="stroke:${COUL[d.aire]}" stroke-width="3"/>` : "";
+      const svg = `<svg viewBox="0 0 160 16" preserveAspectRatio="none" aria-hidden="true"><line x1="${sx(0)}" x2="${sx(0)}" y1="1" y2="15" style="stroke:var(--encre)" stroke-width="1" stroke-dasharray="2 2"/>${trait}<line x1="${sx(d.pente)}" x2="${sx(d.pente)}" y1="2" y2="14" style="stroke:var(--encre)" stroke-width="2.4"/></svg>`;
+      const icTxt = avecIC ? ic(d.ic_bas*100, d.ic_haut*100, F.f2) : `IC non rapporté (${d.tirages_ecartes} tirages écartés)`;
+      return `<td class="cel${ex ? " exclut" : ""}"><span class="v">${F.s2(d.pente*100)}</span><span class="ic">${icTxt}</span>${svg}</td>`;
+    }).join("");
+    const fig = v !== PRINCIPALE && R.variantes_figure.includes(v) ? " · dans la figure du rapport" : "";
+    return `<tr><th scope="row">${esc(v)}<span class="u">${/secondaire/i.test(v) ? "point par lycée privé en plus" : "point par km"}${fig}</span></th>${cases}</tr>`;
+  };
+  ecrire("tab-robustesse", `<thead><tr><th>Variante</th>${AIRES.map(a => `<th style="color:${COUL[a]}">${a}</th>`).join("")}</tr></thead><tbody>` + variantes.map(ligne).join("") + "</tbody>");
+  document.getElementById("rob-n").textContent = nVar;
+  ecrire("rob-source", `Ce sont les ${nVar} variantes du tableau détaillé du rapport, dont la figure de robustesse reprend ${enLettres(nFig)}.`);
+  document.getElementById("rob-titre").textContent = nEx === 0 ? `Dans les ${nVar} variantes, aucun des ${n} intervalles n\u2019exclut zéro` : `Dans les ${nVar} variantes, ${nEx} intervalle${nEx>1?"s":""} sur ${n} ${nEx>1?"excluent":"exclut"} zéro`;
+
+  const rb = (v, a) => R.robustesse.find(d => d.variante === v && d.aire === a);
+  const p = a => rb("Spécification principale", a), s = a => rb("Sans contrôle de densité", a);
+  ecrire("texte-densite", `<strong>Le contrôle de densité est le choix qui pèse le plus.</strong> Sans lui, la pente de Lyon passe de ${F.f2(p("Lyon").pente*100)} à ${F.f2(s("Lyon").pente*100)}, celle de Nantes de ${F.f2(p("Nantes").pente*100)} à ${F.f2(s("Nantes").pente*100)} ${ic(s("Nantes").ic_bas*100, s("Nantes").ic_haut*100, F.f2)} point par km&nbsp;: les communes denses sont plus proches d'un lycée privé, et comptent à distance égale un peu moins de cadres à Lyon, un peu plus à Nantes.`);
+  const mp = R.moran.filter(d => d.variable === "part_cadres_2022"), me = R.moran.filter(d => d.variable === "ecart_anneau");
+  ecrire("texte-moran", `<strong>Les intervalles sont sans doute trop étroits.</strong> L'indice I de Moran de la part de cadres va de ${F.f2(d3.min(mp, d => d.I))} à ${F.f2(d3.max(mp, d => d.I))} selon l'aire, et encore jusqu'à ${F.f2(d3.max(me, d => d.I))} une fois retirée la moyenne de chaque anneau&nbsp;: deux voisines ne sont pas deux observations indépendantes, et le bootstrap par commune n'en tient compte qu'en partie.`);
+})();
+
+/* ---------- 10 : limites ---------- */
+(function(){
+  const s = R.profil_aires.find(d => d.aire === "Strasbourg"), e = R.acces.find(d => d.aire === "Strasbourg");
+  ecrire("limite-strasbourg", `<strong>Strasbourg, aire fragile.</strong> ${s.n_prive} lycées privés sous contrat, ${Math.round(e.part_exposees*e.communes)} communes exposées sur ${e.communes}&nbsp;: une pente secondaire bruitée.`);
+})();
+
+/* ---------- 11 : conclusion ---------- */
+(function(){
+  const nul = AIRES.filter(a => verdictH1(a).mention === "résultat nul établi");
+  const nc = AIRES.filter(a => verdictH1(a).verdict === "non concluante");
+  ecrire("msg-h1-titre", `${nul.length ? `À ${listeAires(nul)}, le résultat nul est établi au sens de notre règle, mais l'intervalle n'exclut pas un écart de quelques points` : "Aucun résultat nul établi entre communes voisines"}${nc.length ? `&nbsp;; ${listeAires(nc).replace(" et à ", " et ")} ${nc.length > 1 ? "sont non concluantes" : "est non concluante"}` : ""}.`);
+  ecrire("msg-h1", nul.map(a => { const p = principale(a); return `À ${a}, pour 5&nbsp;km de moins jusqu'au lycée privé, l'écart va de ${F.s1(-5*p.ic_haut*100)} à ${F.s1(-5*p.ic_bas*100)} points de cadres, un intervalle sans doute trop étroit&nbsp;; `; }).join("") +
+    "rien ne distingue l'aire de l'Ouest (H2).");
+  const q = coefH3("β_q"), n = coefH3("β_n");
+  ecrire("msg-h3-titre", `H3 ${verdictH3.verdict}&nbsp;: la hausse des cadres va davantage de pair avec le nombre de lycées proches qu'avec leur valeur ajoutée.`);
+  ecrire("msg-h3", `Un écart-type d'IVAL en plus va de pair avec ${F.s2(q.estimation)} point de hausse ${ic(q.ic_bas,q.ic_haut,F.f2)}, un écart-type de nombre de lycées avec ${F.s2(n.estimation)} ${ic(n.ic_bas,n.ic_haut,F.f2)}, selon un test qui désavantage la qualité.` +
+    (H4_DETACHE ? "" : " Aucune infrastructure ne se détache non plus (H4)."));
+  const r = GRADIENT.map(d => d.centre.part_cadres_2022 / d.loin.part_cadres_2022);
+  ecrire("msg-centre", `À moins de 5&nbsp;km du centre, ${F.f1(d3.min(r))} à ${F.f1(d3.max(r))} fois plus de cadres qu'au-delà de 30&nbsp;km (` +
+    GRADIENT.map(d => `${F.f0(d.centre.part_cadres_2022*100)}&nbsp;% contre ${F.f0(d.loin.part_cadres_2022*100)}&nbsp;% à ${d.aire}`).join(", ") +
+    `)&nbsp;; la commune est sans doute une maille trop large pour voir un choix de logement selon le lycée.`);
+})();
+
+/* ---------- Sommaire : section courante ---------- */
+(function(){
+  const liens = [...document.querySelectorAll(".nav ol a")];
+  const cibles = liens.map(a => document.querySelector(a.getAttribute("href")));
+  const obs = new IntersectionObserver(es => {
+    es.forEach(e => { if (e.isIntersecting){ const i = cibles.indexOf(e.target); liens.forEach((l,j) => l.classList.toggle("actif", j === i)); } });
+  }, {rootMargin:"-45% 0px -50% 0px"});
+  cibles.forEach(c => obs.observe(c));
+})();
+})();
+</script>
