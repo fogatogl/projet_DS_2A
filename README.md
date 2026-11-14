@@ -43,10 +43,10 @@ Le plan complet et le journal des décisions sont dans [`docs/PLAN.md`](docs/PLA
 
 ## Voir les résultats
 
-- **Le rapport** : https://fogatogl.github.io/DataScience/ (site Quarto construit depuis `rapport.ipynb`).
-- **La présentation interactive** de soutenance : https://fogatogl.github.io/DataScience/presentation.html (cartes 1999-2022, accès aux lycées, résultats de H1 à H4).
+- **Le rapport** : https://fogatogl.github.io/projet_DS_2A/ (site Quarto construit depuis `rapport.ipynb`).
+- **La présentation interactive** de soutenance : https://fogatogl.github.io/projet_DS_2A/presentation.html (cartes 1999-2022, accès aux lycées, résultats de H1 à H4).
 
-Les deux pages sont recalculées depuis les données et publiées sur la branche `gh-pages` de la fork [fogatogl/DataScience](https://github.com/fogatogl/DataScience) : seul le propriétaire d'un dépôt peut y activer GitHub Pages. Aucun fichier HTML n'est commité sur les autres branches. Pour les mettre à jour, dans un clone de la fork synchronisé avec `main` (bouton *Sync fork* sur GitHub) :
+Les deux pages sont recalculées depuis les données et publiées sur la branche `gh-pages` de ce dépôt. Aucun fichier HTML n'est commité sur les autres branches. Pour les mettre à jour, dans un clone à jour de `main` :
 
 ```bash
 uv run quarto render                       # exécute le rapport et écrit le site dans _site/
@@ -74,7 +74,7 @@ uv run quarto render             # exécute rapport.ipynb et écrit le site dans
 
 `uv run` est nécessaire : il donne à Quarto le Python de l'environnement du projet, où `cadres_lycees` est installé.
 
-Sur un compte neuf, les données sont téléchargées depuis les copies gelées publiques décrites ci-dessous, puis gardées dans `data/`. Depuis un clone neuf, sans identifiants S3, le notebook s'exécute de bout en bout en environ 16 minutes, téléchargements compris (mesuré le 04/11/2026 sur un clone neuf de la branche `main` de la fork, dans un dossier vide, sans `data/` ni `BUCKET_S3` : les 28 fichiers bruts ont été lus sur la release et leur `sha256` contrôlé). Pour l'exécuter sans construire le site :
+Sur un compte neuf, les données sont téléchargées depuis les copies gelées publiques décrites ci-dessous, puis gardées dans `data/`. Depuis un clone neuf, sans identifiants S3, le notebook s'exécute de bout en bout en environ 17 minutes, téléchargements compris (mesuré le 08/11/2026 sur un clone neuf de ce dépôt, dans un dossier vide, sans `data/` ni `BUCKET_S3` : les 28 fichiers bruts ont été téléchargés et leur `sha256` contrôlé). Pour l'exécuter sans construire le site :
 
 ```bash
 uv run jupyter nbconvert --to notebook --execute rapport.ipynb --output rapport_execute.ipynb
@@ -89,7 +89,7 @@ Les données ne sont pas dans Git. `stockage.py` les lit et les écrit :
 
 ### Copies gelées des données
 
-Les sources qui changent sans prévenir sont lues dans une copie datée, jamais directement à leur API. Chaque copie est cherchée dans la release GitHub [`donnees-20261020`](https://github.com/fogatogl/DataScience/releases/tag/donnees-20261020) de ce dépôt, puis, en secours, dans la même release du [dépôt du groupe](https://github.com/gabrielwenger1-coder/DataScience/releases/tag/donnees-20261020), dont ce dépôt est une fork. Le code échoue si aucune des deux ne fournit un fichier au `sha256` attendu, et il recontrôle le `sha256` à chaque lecture d'une copie déjà téléchargée.
+Les sources qui changent sans prévenir sont lues dans une copie datée, jamais directement à leur API. Chaque copie est cherchée dans la release GitHub [`donnees-20261020`](https://github.com/fogatogl/projet_DS_2A/releases/tag/donnees-20261020) de ce dépôt, puis, en secours, dans la même release du [dépôt d'origine du projet](https://github.com/fogatogl/DataScience/releases/tag/donnees-20261020). Le code échoue si aucune des deux ne fournit un fichier au `sha256` attendu, et il recontrôle le `sha256` à chaque lecture d'une copie déjà téléchargée.
 
 | Copie | Date | Origine | `sha256` |
 |---|---|---|---|
@@ -106,7 +106,7 @@ Les sources qui changent sans prévenir sont lues dans une copie datée, jamais 
 | `contours_aav_<code>_20261013.parquet` | 13/10/2026 | `cartiflette==0.4.0`, contours des communes et arrondissements par aire, COG 2025, sans simplification | `002` : `5fc255ef5f92c540c5037f793c15c24007642c7cdce256a1e4f47d516176f231`<br>`004` : `6ff1e4bc0675ab567b7af3eb506774c0740ab855c5f333c66ee6b8fe1eb89982`<br>`005` : `c42afd4910a9a6907c54e2f8d476b8a4b6db3630bf9ffdff7b41cedf8a3b2c6e`<br>`006` : `6e0cb9a94a69887fd123a2d57c49068aa25b207da9541813652c00f1b2930c28`<br>`008` : `54665ed725b9ae364166d6dc76cd09b71b8e42397916e6fe564d8f0308786e59`<br>`010` : `454d27768198bb48be5882987f3aa36f88902add34bf443dff0cd37cc8be7790`<br>`013` : `c846f8d895d3121435037f5c04054a9e2275bb95e2de1791cae61498550b4cec`<br>`014` : `a1d13c20cc9565de3e2b3bb78b8d020076bae7c2a94ac2648d7aa96aa0699357` |
 | `contours_iris_<code>_20261021.parquet` | 21/10/2026 | `cartiflette==0.4.0`, contours des IRIS par aire retenue, COG 2025, sans simplification | `008` : `61e52233fcdd7fe09d0f0350b6a5060719ca83f0a56c7710848a5ae35d34ff23`<br>`002` : `5c77cb03f2cfb55e3e2634218f4f94b6b43f13ed1496e85572919dc271b43018`<br>`010` : `15b57329479d4261de4a443b9b4458332f92692b286caecbb270a3b678aad82c` |
 
-Les fichiers de l'Insee (zonage en aires d'attraction, série historique du recensement 2022, série historique des actifs de 25 à 54 ans par CSP de 1968 à 2022, bases IRIS « Activité des résidents » 2011 et 2022, table de passage des codes communes) sont permanents : ils sont lus à leur URL d'origine, avec le même contrôle du `sha256` (voir `src/cadres_lycees/config.py`).
+Les fichiers de l'Insee (zonage en aires d'attraction, série historique du recensement 2022, série historique des actifs de 25 à 54 ans par CSP de 1968 à 2022, bases IRIS « Activité des résidents » 2011 et 2022, table de passage des codes communes) sont permanents : ils sont lus à leur URL d'origine, puis, si l'Insee coupe le téléchargement, dans la release de ce dépôt, avec le même contrôle du `sha256` (voir `src/cadres_lycees/config.py`).
 
 **Refaire un gel** (seulement si le groupe décide de changer de copie, à journaliser au plan) :
 

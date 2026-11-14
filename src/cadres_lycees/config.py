@@ -92,12 +92,12 @@ VARIABLES_AWS = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
 VARIABLE_BUCKET_S3 = "BUCKET_S3"
 PREFIXE_S3 = "projet-cadres-lycees"
 DOSSIER_LOCAL = Path(__file__).parents[2] / "data"
-# Dépôt de référence du projet ; ses releases publient les copies gelées
-URL_DEPOT = "https://github.com/fogatogl/DataScience"
+# Dépôt du projet ; sa release publie les copies gelées et, en secours, les zips de l'Insee
+URL_DEPOT = "https://github.com/fogatogl/projet_DS_2A"
 URL_COPIES_RELEASE = f"{URL_DEPOT}/releases/download/donnees-20261020/"
-# La même release, sur le dépôt du groupe dont le dépôt de référence est une fork, en secours
+# La même release sur le dépôt d'origine du projet, en secours (copies gelées seulement)
 URL_COPIES_RELEASE_SECOURS = (
-    "https://github.com/gabrielwenger1-coder/DataScience/releases/download/donnees-20261020/"
+    "https://github.com/fogatogl/DataScience/releases/download/donnees-20261020/"
 )
 
 # Annuaire de l'éducation : export complet de l'API, gelé car il change chaque jour
