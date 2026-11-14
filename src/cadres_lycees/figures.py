@@ -3,6 +3,7 @@
 La charte commune est dans `charte.py`, les cartes interactives dans `cartes.py`.
 """
 
+import itertools
 import textwrap
 from collections.abc import Collection
 
@@ -12,6 +13,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch, Rectangle
 
 from cadres_lycees import charte, config, h1
 
@@ -499,5 +501,164 @@ def fig_robustesse(robustesse: pd.DataFrame, titre: str) -> Figure:
         f"principale ({config.NB_TIRAGES_BOOTSTRAP} tirages par commune). Prix au m² : Lyon et "
         "Nantes seulement (Alsace-Moselle hors DVF). Toutes les variantes sont dans le tableau "
         "détaillé. Sources : Insee, recensement 2022 ; annuaire de l'éducation ; DVF ; IGN.",
+    )
+    return fig
+
+
+def fig_h4(pentes: pd.DataFrame, titre: str) -> Figure:
+    """`fig_h4` : association de la part de cadres avec l'accès à chaque infrastructure (H4).
+
+    Une ligne par mesure d'accès, de la plus forte à la plus faible association (moyenne des
+    pentes des aires), un point par aire avec son intervalle à 95 %. `pentes` vient de
+    `h1.pentes_h4` ; `titre` est le message de la figure, écrit par le groupe.
+    """
+    aires = charte.aires_ordonnees(pentes.index.get_level_values("aire"))
+    ordre = pentes["pente"].groupby(level="mesure").mean().sort_values().index
+    texte = config.COULEUR_TEXTE
+    # Les aires sont décalées verticalement dans chaque ligne, pour que leurs intervalles ne se
+    # recouvrent pas ; la première en haut, comme dans la légende
+    decalages = {aire: -0.22 * (k - (len(aires) - 1) / 2) for k, aire in enumerate(aires)}
+
+    fig, ax = plt.subplots(figsize=(11, 1.4 + 1.3 * len(ordre)))
+    ax.axvline(0, color=config.COULEUR_LIAISON, linewidth=1, zorder=0)
+    for position, mesure in enumerate(ordre):
+        for aire in aires:
+            ligne = pentes.loc[(mesure, aire)]
+            y = position + decalages[aire]
+            couleur = config.COULEURS_AIRES[aire]
+            ax.hlines(y, ligne["ic_bas"] * 100, ligne["ic_haut"] * 100, color=couleur, linewidth=2)
+            ax.scatter(
+                ligne["pente"] * 100,
+                y,
+                s=45,
+                color=couleur,
+                edgecolor="white",
+                zorder=3,
+                label=aire if position == 0 else None,
+            )
+    ax.set_yticks(range(len(ordre)))
+    ax.set_yticklabels(ordre, color=texte)
+    ax.set_xlabel(
+        "Écart de part de cadres en 2022 entre deux communes voisines pour un écart-type d'accès "
+        "en plus (points)",
+        color=texte,
+    )
+    charte.styler_axes(ax, "x", axe_y=False)
+    # Légende dans l'ordre des aires de la charte, en dehors des points
+    ax.legend(frameon=False, loc="upper left", bbox_to_anchor=(1.0, 1.0))
+
+    charte.habiller(
+        fig,
+        titre,
+        "Pente des paires de communes contiguës, sans constante, à écarts de distance au centre "
+        "et de log-densité donnés.\nMesures d'accès centrées réduites dans chaque aire et "
+        "orientées pour qu'une valeur positive dise « plus d'accès, plus de cadres » (distances "
+        "retournées).\nIntervalles à 95 % par bootstrap des communes "
+        f"({config.NB_TIRAGES_BOOTSTRAP} tirages, les mêmes pour toutes les mesures).\n"
+        "Sources : Insee, recensement 2022 et BPE 2025 ; annuaire de l'éducation "
+        f"({config.DATE_ANNUAIRE}) ; SNCF Gares & Connexions ; ministère des Sports (Data ES) ;\n"
+        "copies du 03/11/2026 pour la BPE, les gares et Data ES ; DREES, APL 2024 ; IGN.",
+    )
+    return fig
+
+
+def carte_iris(
+    contours: gpd.GeoDataFrame, parts: pd.DataFrame, code_centre: str, titre: str
+) -> Figure:
+    """Carte statique de la part de cadres par IRIS d'une aire, en 2011 puis en 2022.
+
+    `contours` vient de `collecte.contours_iris`, `parts` de `nettoyage.part_cadres_iris`. En haut,
+    l'aire entière ; en bas, un zoom sur un carré de `config.ZOOM_IRIS_KM` km de demi-côté autour
+    du centroïde de la commune-centre `code_centre` (Lyon : 69123, ses arrondissements réunis),
+    où ses IRIS deviennent lisibles. Les quatre panneaux ont les mêmes classes ; les IRIS non
+    comparables (code ou territoire changé depuis 2011) sont hachurés en gris. C'est une
+    exploration : ni lycées ni test. `titre` est le message de la carte, écrit par le
+    groupe.
+    """
+    codes = contours["CODE_IRIS"].replace(config.IRIS_RECODES_2025_2024)
+    # Dans les deux sens : un IRIS de 2022 sans contour disparaîtrait de la carte sans signal
+    communes = codes.str[:5].unique()
+    donnees = parts.index[parts.index.str[:5].isin(communes)]
+    ecart = sorted(set(codes) ^ set(donnees))
+    assert not ecart, (
+        f"IRIS présents dans les contours ou dans les données de 2022 seulement : {ecart}"
+    )
+    carte = contours.to_crs(config.CRS_CALCUL).assign(iris=codes.to_numpy())
+    carte = carte.join(parts, on="iris", validate="one_to_one")
+    comparables = carte[carte["comparable"]]
+    autres = carte[~carte["comparable"]]
+    commune_centre = carte[carte["INSEE_COM"] == code_centre]
+    assert not commune_centre.empty, f"Commune-centre {code_centre} absente des contours."
+    centre = commune_centre.union_all().centroid
+
+    bornes = [0, *config.BORNES_PART_CADRES_IRIS, 100]
+    demi_cote = config.ZOOM_IRIS_KM * 1000
+    ouest, sud = centre.x - demi_cote, centre.y - demi_cote
+    # La légende a sa propre rangée sous les cartes : à côté, elle chevaucherait les titres
+    fig, axes = plt.subplots(3, 2, figsize=(9, 10), gridspec_kw={"height_ratios": [1, 1, 0.16]})
+    for colonne, annee in enumerate((2011, 2022)):
+        # Borne basse incluse, comme dans la légende
+        classe = pd.cut(
+            comparables[f"part_cadres_1564_{annee}"] * 100, bornes, right=False, labels=False
+        )
+        assert classe.notna().all(), f"Part manquante ou hors des classes en {annee}."
+        couleurs = [config.COULEURS_PART_CADRES_IRIS[int(rang)] for rang in classe]
+        ax_aire, ax_zoom = axes[0, colonne], axes[1, colonne]
+        for ax, epaisseur in ((ax_aire, 0.2), (ax_zoom, 0.6)):
+            # Les hachures prennent la couleur du trait : un gris foncé les rend lisibles
+            autres.plot(
+                ax=ax,
+                color=config.COULEUR_IRIS_NON_COMPARABLE,
+                hatch="////",
+                edgecolor=config.COULEUR_TEXTE,
+                linewidth=epaisseur,
+            )
+            comparables.plot(ax=ax, color=couleurs, edgecolor="white", linewidth=epaisseur)
+            ax.set_axis_off()
+        ax_aire.add_patch(
+            Rectangle(
+                (ouest, sud),
+                2 * demi_cote,
+                2 * demi_cote,
+                fill=False,
+                edgecolor=config.COULEUR_TEXTE,
+                linewidth=1,
+            )
+        )
+        ax_zoom.set_xlim(ouest, ouest + 2 * demi_cote)
+        ax_zoom.set_ylim(sud, sud + 2 * demi_cote)
+        ax_aire.set_title(f"{annee}, aire entière", loc="left", fontsize=11)
+        ax_zoom.set_title(f"{annee}, zoom sur le centre", loc="left", fontsize=11)
+
+    libelles = [f"moins de {bornes[1]} %"]
+    libelles += [f"{bas} à {haut} %" for bas, haut in itertools.pairwise(bornes[1:-1])]
+    libelles.append(f"{bornes[-2]} % ou plus")
+    poignees = [
+        Patch(facecolor=couleur, edgecolor="white", label=libelle)
+        for couleur, libelle in zip(config.COULEURS_PART_CADRES_IRIS, libelles, strict=True)
+    ]
+    poignees.append(
+        Patch(
+            facecolor=config.COULEUR_IRIS_NON_COMPARABLE,
+            hatch="////",
+            edgecolor=config.COULEUR_TEXTE,
+            label="IRIS non comparable",
+        )
+    )
+    grille = axes[0, 0].get_gridspec()
+    for ax in axes[2]:
+        ax.remove()
+    ax_legende = fig.add_subplot(grille[2, :])
+    ax_legende.set_axis_off()
+    ax_legende.legend(handles=poignees, loc="center", ncol=4, frameon=False, fontsize=10)
+    charte.habiller(
+        fig,
+        titre,
+        "Part des cadres parmi les actifs de 15 à 64 ans (les bases IRIS ne croisent pas les "
+        f"25-54 ans avec la catégorie socioprofessionnelle). Zoom : carré de "
+        f"{2 * config.ZOOM_IRIS_KM} km de côté autour de la commune-centre. Non comparable : "
+        "code absent en 2011, aucun actif ou territoire agrandi depuis. Part peu précise sous 200 "
+        "actifs. Sources : Insee, recensements 2011 et 2022 ; IGN.",
+        haut=0.97,
     )
     return fig

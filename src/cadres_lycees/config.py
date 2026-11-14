@@ -53,6 +53,8 @@ QUALITE_JPEG_FONDS_PRESENTATION = 65
 SIMPLIFICATION_PRESENTATION_M = 100
 # Borne haute du dernier anneau (infinie) écrite ainsi dans le JSON, que la page lit « et plus »
 BORNE_OUVERTE_PRESENTATION = 999
+# Document affiché en annexe du rapport
+CHEMIN_DICTIONNAIRE = Path(__file__).parents[2] / "docs" / "dictionnaire_variables.md"
 # Rayons du tableau de support : le principal et le 10 km rapporté à côté
 RAYONS_SUPPORT_KM = (5, 10)
 # Aires de l'Ouest, dont au moins une doit être retenue (critère a)
@@ -277,6 +279,8 @@ SHA256_CONTOURS_IRIS = {
     "002": "5c77cb03f2cfb55e3e2634218f4f94b6b43f13ed1496e85572919dc271b43018",
     "010": "15b57329479d4261de4a443b9b4458332f92692b286caecbb270a3b678aad82c",
 }
+# Code IRIS des contours (COG 2025) -> code des données 2022 (COG 2024) : Porte des Pierres Dorées
+IRIS_RECODES_2025_2024 = {"691140000": "691590000"}
 # Table de passage des codes communes 2025 : repère les fusions entre 2013 et 2024
 URL_PASSAGE_COG = (
     "https://www.insee.fr/fr/statistiques/fichier/7671867/table_passage_annuelle_2025.zip"
@@ -443,6 +447,9 @@ FONDS_CARTE = {"Fond gris (Esri)": "Esri.WorldGrayCanvas", "Plan IGN": "Geoporta
 # Carte IRIS : classes de part de cadres en % (borne basse incluse), ColorBrewer « Purples »
 BORNES_PART_CADRES_IRIS = (10, 20, 30, 40, 50)
 COULEURS_PART_CADRES_IRIS = ("#f2f0f7", "#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f")
+COULEUR_IRIS_NON_COMPARABLE = "#e3e2de"
+# Demi-côté du zoom sur la commune-centre : 9 km couvrent celle de Strasbourg et Villeurbanne
+ZOOM_IRIS_KM = 9
 
 # Fichiers bruts lus par le projet et leur sha256, listés en annexe ; `{aav}` : un par aire
 FICHIERS_BRUTS = (

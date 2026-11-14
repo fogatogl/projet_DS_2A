@@ -181,6 +181,56 @@ def tableau_gradient(parts: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def tableau_hypotheses(
+    verdict_h1: pd.DataFrame, principale: pd.DataFrame, verdict_h3: pd.DataFrame
+) -> Styler:
+    """Renvoie le tableau des hypothèses : verdicts de H1 et H3, H2 et H4 descriptives.
+
+    `verdict_h1` et `verdict_h3` viennent de `h1.verdict_h1` et `h3.verdict_h3`, `principale`
+    de `h1.pentes_paires_par_aire`. Les verdicts suivent les règles écrites avant les
+    résultats ; H2 et H4 n'en ont pas. Un résultat nul établi est donné avec son intervalle
+    pour 5 km de moins jusqu'au lycée privé : nul au sens de la règle ne veut pas dire petit.
+    """
+    lignes = []
+    for aire, ligne in verdict_h1.loc[charte.aires_ordonnees(verdict_h1.index)].iterrows():
+        mention = ligne["mention"]
+        if mention == "résultat nul établi":
+            # Pente en fraction par km : 5 km de moins, en points, inverse le signe des bornes
+            bas = _nombre(principale.loc[aire, "ic_haut"], -500, decimales=1)
+            haut = _nombre(principale.loc[aire, "ic_bas"], -500, decimales=1)
+            mention += f" au sens de la règle ; pour 5 km de moins, de {bas} à {haut} points"
+        lignes.append(
+            {"Hypothèse": "H1", "Portée": aire, "Verdict": ligne["verdict"], "Mention": mention}
+        )
+    lignes.append(
+        {
+            "Hypothèse": "H2",
+            "Portée": "3 aires",
+            "Verdict": "descriptive",
+            "Mention": "une seule aire de l'Ouest : comparaison sans test",
+        }
+    )
+    fiabilite = _nombre(verdict_h3.loc["ensemble", "fiabilite"], signe=False, decimales=3)
+    lignes.append(
+        {
+            "Hypothèse": "H3",
+            "Portée": "3 aires ensemble",
+            "Verdict": verdict_h3.loc["ensemble", "verdict"],
+            "Mention": f"fiabilité de l'IVAL {fiabilite}",
+        }
+    )
+    lignes.append(
+        {
+            "Hypothèse": "H4",
+            "Portée": "3 aires",
+            "Verdict": "descriptive",
+            "Mention": "aucune règle de verdict fixée avant l'estimation",
+        }
+    )
+    # Sans index affiché : un en-tête à plat, une ligne par hypothèse et par portée
+    return pd.DataFrame(lignes).style.hide(axis="index")
+
+
 def tableau_support(criteres: pd.DataFrame, support: pd.DataFrame) -> str:
     """Met en forme les critères et le support de `analyse.lire_tableau_support` en Markdown.
 
