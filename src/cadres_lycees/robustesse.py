@@ -78,7 +78,7 @@ def robustesse_h1(
 ) -> pd.DataFrame:
     """Renvoie les pentes de H1 dans chaque variante de robustesse, aire par aire.
 
-    Dans l'ordre du plan, après la spécification principale : pente secondaire à 3 et 10 km (le
+    Dans l'ordre du rapport, après la spécification principale : pente secondaire à 3 et 10 km (le
     rayon de 5 km est la secondaire) ; avec le logarithme du prix au m² en contrôle, sur les
     paires dont les deux communes ont un prix, hors de `config.AIRES_HORS_DVF` ; part de cadres
     parmi les 15 ans ou plus en 2022 ; distance au lycée privé le plus proche parmi

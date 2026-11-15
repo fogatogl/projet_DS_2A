@@ -198,7 +198,7 @@ def tableau_hypotheses(
             # Pente en fraction par km : 5 km de moins, en points, inverse le signe des bornes
             bas = _nombre(principale.loc[aire, "ic_haut"], -500, decimales=1)
             haut = _nombre(principale.loc[aire, "ic_bas"], -500, decimales=1)
-            mention += f" au sens de la règle ; pour 5 km de moins, de {bas} à {haut} points"
+            mention += f" ; pour 5 km de moins, de {bas} à {haut} points"
         lignes.append(
             {"Hypothèse": "H1", "Portée": aire, "Verdict": ligne["verdict"], "Mention": mention}
         )
@@ -224,7 +224,7 @@ def tableau_hypotheses(
             "Hypothèse": "H4",
             "Portée": "3 aires",
             "Verdict": "descriptive",
-            "Mention": "aucune règle de verdict fixée avant l'estimation",
+            "Mention": "comparaison des pentes, sans test",
         }
     )
     # Sans index affiché : un en-tête à plat, une ligne par hypothèse et par portée

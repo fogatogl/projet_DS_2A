@@ -14,13 +14,13 @@ from cadres_lycees import config, stockage
 
 
 def _copies_publiques(chemin: str) -> list[str]:
-    """Renvoie les URL publiques d'une copie gelée : la release du dépôt, puis celle d'origine.
+    """Renvoie l'URL publique d'une copie gelée, dans la release du dépôt.
 
-    Les deux releases portent les mêmes copies gelées ; celle du dépôt porte aussi les zips de
-    l'Insee, en secours de leur URL d'origine. Le `sha256` est contrôlé quelle que soit l'origine.
+    La release porte aussi les zips de l'Insee, en secours de leur URL d'origine. Le `sha256`
+    est contrôlé quelle que soit l'origine.
     """
     nom = chemin.removeprefix("raw/")
-    return [config.URL_COPIES_RELEASE + nom, config.URL_COPIES_RELEASE_SECOURS + nom]
+    return [config.URL_COPIES_RELEASE + nom]
 
 
 def geler_annuaire(chemin: str) -> str:

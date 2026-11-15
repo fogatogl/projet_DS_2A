@@ -2,63 +2,60 @@
 
 Projet du cours « Python pour la data science » (ENSAE), rendu le 24 novembre 2026.
 
-## Question
+- **Le rapport** : https://fogatogl.github.io/projet_DS_2A/
+- **La présentation interactive** de la soutenance : https://fogatogl.github.io/projet_DS_2A/presentation.html
 
-Dans des aires urbaines de province aux traditions scolaires contrastées, les communes offrant un meilleur accès à des lycées privés ou à forte valeur ajoutée concentrent-elles davantage de cadres que leurs voisines, et ce lien résiste-t-il face aux autres infrastructures ?
+## La question
 
-Le plan complet et le journal des décisions sont dans [`docs/PLAN.md`](docs/PLAN.md). La méthode tient en une page ci-dessous.
+Les familles paient pour l'école de leurs enfants : à Paris, les logements sont plus chers dans les secteurs des collèges publics les plus performants. Nous avons cherché si ce lien se retrouve en province, avec les lycées. Dans les aires urbaines de Nantes, Lyon et Strasbourg, les communes proches d'un lycée privé ou d'un lycée à forte valeur ajoutée comptent-elles plus de cadres que leurs voisines ? Et ce lien est-il plus fort qu'avec d'autres équipements, comme les gares ou les médecins ?
 
-## Méthode en bref
+## Ce que nous avons fait
 
-**Unité et périmètre.** La commune (les arrondissements à Lyon), au COG 2025, dans trois aires d'attraction des villes (zonage Insee 2020) : Nantes, Lyon et Strasbourg. Elles ont été choisies parmi 8 candidates sur le [tableau de support](docs/tableau_support.md) (poids du privé, taille, nombre de lycées privés, support de l'exposition), avant toute donnée sur les cadres.
+**Les données.** Nous avons construit une base de 789 communes (les arrondissements à Lyon) qui réunit :
 
-**Variable à expliquer.** La part des cadres et professions intellectuelles supérieures parmi les actifs de 25 à 54 ans (occupés et chômeurs ayant déjà travaillé), en 2011 et en 2022, et son évolution en points (Insee, « Évolution et structure de la population » 2022).
+- la part de cadres parmi les actifs de 25 à 54 ans, en 2011 et en 2022, tirée du recensement de l'Insee ;
+- l'accès aux lycées généraux et technologiques, publics et privés sous contrat, mesuré depuis le centre de chaque commune : distance au lycée privé le plus proche, nombre de lycées à moins de 5 km et valeur ajoutée moyenne de ces lycées, publiée par le ministère de l'Éducation nationale ;
+- l'accès aux gares, aux médecins généralistes et aux équipements sportifs et culturels ;
+- la distance au centre de l'aire, la densité de population et le prix au m².
 
-**Accès aux lycées.** Lycées généraux, technologiques et polyvalents, publics et privés sous contrat (annuaire de l'éducation du 13/10/2026). Depuis le centroïde de chaque commune, à vol d'oiseau : nombre de lycées à 5 km (3 et 10 km en robustesse), distance au lycée privé le plus proche, valeur ajoutée moyenne des lycées à 5 km (IVAL, taux d'accès de la seconde au bac, sessions 2012 à 2022). Tous les lycées de métropole comptent, y compris hors des aires.
+**Le choix des aires.** Nous avons comparé huit aires candidates sans regarder les données sur les cadres (voir le [tableau de support](src/cadres_lycees/tableau_support.md)). Nantes représente l'Ouest, où le privé est très répandu et peu sélectif socialement ; à Lyon et à Strasbourg, il est plus sélectif.
 
-**Contrôles.** Distance au centre de l'aire, densité (en logarithme), aire. Ne sont jamais des contrôles, car en partie des conséquences de la part de cadres : le niveau de vie, l'IPS des lycées et la croissance de la population.
+**La méthode.** La part de cadres baisse nettement du centre vers la périphérie, et les lycées privés sont surtout au centre. Pour ne pas confondre les deux, nous comparons des communes voisines, qui ont la même position dans l'aire : quand une commune est plus proche d'un lycée privé que sa voisine, compte-t-elle plus de cadres ? Les intervalles de confiance viennent d'un bootstrap, qui tire les communes au hasard. Une seconde comparaison, entre communes situées à la même distance du centre, sert à confirmer le résultat. Le niveau de vie et la composition sociale des lycées ne sont jamais utilisés comme contrôles, car ils dépendent eux-mêmes de la part de cadres.
 
-**Hypothèses et comparaisons.**
-
-| | Énoncé | Estimation principale |
+| | Hypothèse | Comment nous la testons |
 |---|---|---|
-| H1 | À distance égale du centre, plus de cadres là où l'accès au privé sous contrat est meilleur | Paires de communes contiguës : écart de part de cadres sur l'écart de distance au lycée privé le plus proche, avec les écarts de distance au centre et de densité, sans constante ; intervalles par bootstrap des communes. En complément : anneaux de distance au centre, cellules d'au moins 15 communes exposées et 15 non exposées et d'écart de distance au centre d'au plus 2 km |
-| H2 | Lien plus faible dans l'Ouest (Nantes), où le privé est plus répandu | H1 aire par aire, comparée sans test |
-| H3 | La qualité des lycées (IVAL), plus que leur nombre, accompagne la hausse de la part de cadres | Régression de l'évolution sur l'IVAL et le nombre de lycées, centrés réduits dans l'aire, effet fixe aire × anneau ; bootstrap par grappes de communes |
-| H4 | Lien plus fort avec les lycées qu'avec les autres équipements | Même mesure d'accès, centrée réduite dans l'aire, pour les gares, les médecins (APL), les équipements sportifs et culturels, dans les paires de communes contiguës ; descriptive, sans verdict, faute de règle fixée avant l'estimation (journal du 03/11) |
+| H1 | À distance égale du centre, il y a plus de cadres là où un lycée privé est plus proche | Comparaison de communes voisines, confirmée par anneaux de distance au centre |
+| H2 | Ce lien est plus faible à Nantes, où le privé est plus répandu | H1 aire par aire, comparée sans test |
+| H3 | La hausse des cadres de 2011 à 2022 suit la qualité des lycées proches plus que leur nombre | Régression de cette hausse sur la valeur ajoutée et sur le nombre de lycées |
+| H4 | Le lien est plus fort avec les lycées qu'avec les gares, les médecins ou les équipements | Même comparaison entre voisines pour chaque équipement, sans verdict |
 
-**Règles de verdict, fixées avant les données.** H1 est « confirmée » si la pente principale va dans le sens attendu avec un intervalle à 95 % qui exclut zéro, si la pente secondaire (nombre de lycées privés à 5 km) va dans le même sens, et si les anneaux estimables aux deux rayons concordent. Elle est « nuancée » ou « infirmée » selon des règles symétriques. Un résultat nul n'est dit « établi » que s'il existe un anneau estimable aux deux rayons ; sinon le verdict est « non concluant ». H3 n'est testable que si la mesure de l'IVAL est assez fiable (au moins 0,5 ; 0,608 mesuré le 20/10), et son verdict se lit sur la différence entre la pente de la qualité et celle du nombre. Les règles complètes sont au §5 du plan.
+**Comment nous concluons.** H1 est confirmée si l'intervalle de confiance exclut zéro et si les autres estimations vont dans le même sens. Quand l'intervalle contient zéro, nous ne parlons de résultat nul que si la comparaison par anneaux le confirme ; sinon, le test n'est « pas concluant ». Pour H3, nous avons d'abord vérifié que la valeur ajoutée des lycées est une mesure assez stable d'une année à l'autre pour être utilisée.
 
-**Garde-fous.** Les choix sont écrits avant les résultats et chaque écart est daté dans le journal (§13 du plan). Les sources qui changent sans prévenir sont lues dans des copies gelées contrôlées par leur `sha256`. Le projet décrit des associations, pas des effets causaux : causalité inverse (un lycée privé s'installe là où vivent déjà des cadres), sélection résidentielle non observée, distances à vol d'oiseau.
+## Résultats
 
-## Résultats clés
+- **La part de cadres dépend d'abord de la distance au centre.** Elle est 1,9 à 2,5 fois plus élevée à moins de 5 km du centre qu'au-delà de 30 km.
+- **Le privé n'a pas le même profil partout.** Il représente 47 % des lycées à Nantes, 45 % à Lyon et 27 % à Strasbourg, mais l'écart de position sociale entre lycées privés et publics est deux fois plus faible à Nantes (12 points) qu'à Lyon (24) et à Strasbourg (23).
+- **Entre communes voisines, être plus près d'un lycée privé ne va pas de pair avec un écart net de cadres (H1).** À Lyon, le lien est proche de zéro : pour 5 km de moins jusqu'au lycée privé, l'écart de part de cadres est compris entre −1,0 et +2,7 points. À Nantes et à Strasbourg, les données ne permettent pas de conclure, et Nantes ne se distingue pas des deux autres aires (H2).
+- **La hausse des cadres suit le nombre de lycées proches plus que leur valeur ajoutée (H3 infirmée).** Un écart-type de lycées en plus va de pair avec 1,73 point de hausse, contre 0,22 point pour un écart-type de valeur ajoutée.
+- **Aucun équipement ne se détache (H4).** Les liens avec les lycées, les gares, les médecins et les équipements sportifs et culturels sont tous faibles.
 
-- **Le privé n'a pas le même profil partout** : 47 % des lycées à Nantes, 45 % à Lyon, 27 % à Strasbourg ; l'écart d'IPS entre privé et public est de 12 points à Nantes contre 24 à Lyon et 23 à Strasbourg.
-- **La part de cadres suit d'abord la distance au centre** : elle est 1,9 à 2,5 fois plus élevée à moins de 5 km du centre qu'au-delà de 30 km.
-- **H1, proximité d'un lycée privé** : entre communes contiguës, la pente est faible et son intervalle contient zéro dans les trois aires (Lyon : −0,18 point de part de cadres par km, intervalle [−0,53 ; +0,21]). « Infirmée » à Lyon (résultat nul établi), « non concluante » à Nantes et à Strasbourg.
-- **H2, l'Ouest** : les pentes des trois aires sont proches ; rien ne distingue Nantes (descriptif).
-- **H3, qualité ou nombre** : la hausse de la part de cadres de 2011 à 2022 va davantage de pair avec le nombre de lycées proches (+1,73 point par écart-type) qu'avec leur valeur ajoutée (+0,22) ; β_q − β_n = −1,51 [−2,85 ; −0,63], H3 « infirmée », y compris avec deux autres mesures de la qualité.
-- **H4, autres infrastructures** : lycées, gares, médecins, équipements sportifs et culturels ont tous des pentes proches de zéro ; aucune ne se détache (descriptif).
-- **Ce sont des associations**, non des relations causales ; l'autocorrélation spatiale qui demeure à position égale rend les intervalles probablement trop étroits.
+Ces résultats décrivent des associations : un lycée privé peut aussi s'implanter là où vivent déjà des cadres. Comme des communes voisines se ressemblent, nos intervalles de confiance sont aussi probablement un peu trop étroits.
 
-## Voir les résultats
+## Mettre le site à jour
 
-- **Le rapport** : https://fogatogl.github.io/projet_DS_2A/ (site Quarto construit depuis `rapport.ipynb`).
-- **La présentation interactive** de soutenance : https://fogatogl.github.io/projet_DS_2A/presentation.html (cartes 1999-2022, accès aux lycées, résultats de H1 à H4).
-
-Les deux pages sont recalculées depuis les données et publiées sur la branche `gh-pages` de ce dépôt. Aucun fichier HTML n'est commité sur les autres branches. Pour les mettre à jour, dans un clone à jour de `main` :
+Le rapport et la présentation sont recalculés depuis les données et publiés sur la branche `gh-pages`. Aucun fichier HTML n'est commité sur les autres branches. Depuis un clone à jour de `main` :
 
 ```bash
 uv run quarto render                       # exécute le rapport et écrit le site dans _site/
 uv run python presentation/construire.py   # ajoute _site/presentation.html
-uv run quarto publish gh-pages --no-render # publie _site/ tel quel sur la branche gh-pages d'origin
+uv run quarto publish gh-pages --no-render # publie _site/ tel quel sur la branche gh-pages
 ```
 
 Pour regarder le site sans le publier : `uv run quarto preview`.
 
 ## Reproduire le projet
 
-Python 3.13 et [uv](https://docs.astral.sh/uv/) sont nécessaires.
+Il faut Python 3.13 et [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync --locked                 # installe exactement les dépendances figées dans uv.lock
@@ -66,15 +63,15 @@ uv run pre-commit install        # active nb-clean et ruff avant chaque commit
 uv run pytest                    # lance les tests
 ```
 
-Le rapport est `rapport.ipynb` : texte, figures et tableaux, recalculés à chaque exécution depuis les données brutes. Le site se construit avec [Quarto](https://quarto.org/), déjà installé sur le SSPCloud :
+Le rapport est `rapport.ipynb`. Ses figures et ses tableaux sont recalculés à chaque exécution à partir des données brutes. Le site se construit avec [Quarto](https://quarto.org/), déjà installé sur le SSPCloud :
 
 ```bash
 uv run quarto render             # exécute rapport.ipynb et écrit le site dans _site/
 ```
 
-`uv run` est nécessaire : il donne à Quarto le Python de l'environnement du projet, où `cadres_lycees` est installé.
+`uv run` est nécessaire, car il donne à Quarto le Python de l'environnement du projet, où le paquet `cadres_lycees` est installé.
 
-Sur un compte neuf, les données sont téléchargées depuis les copies gelées publiques décrites ci-dessous, puis gardées dans `data/`. Depuis un clone neuf, sans identifiants S3, le notebook s'exécute de bout en bout en environ 17 minutes, téléchargements compris (mesuré le 08/11/2026 sur un clone neuf de ce dépôt, dans un dossier vide, sans `data/` ni `BUCKET_S3` : les 28 fichiers bruts ont été téléchargés et leur `sha256` contrôlé). Pour l'exécuter sans construire le site :
+Sur un clone neuf, les 28 fichiers de données sont téléchargés puis gardés dans `data/`, et l'exécution complète prend environ 17 minutes. Pour exécuter le notebook sans construire le site :
 
 ```bash
 uv run jupyter nbconvert --to notebook --execute rapport.ipynb --output rapport_execute.ipynb
@@ -82,14 +79,14 @@ uv run jupyter nbconvert --to notebook --execute rapport.ipynb --output rapport_
 
 ### Stockage des données
 
-Les données ne sont pas dans Git. `stockage.py` les lit et les écrit :
+Les données ne sont pas dans Git. Le module `stockage.py` les range :
 
-- sur le S3 du SSPCloud si `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (définies sur un service SSPCloud) et `BUCKET_S3` sont définies. Le nom du bucket dépend du compte : `export BUCKET_S3=<nom du bucket>` (un `export` fait dans un terminal n'est pas vu par un noyau Jupyter déjà lancé). Les fichiers sont dans `s3://<bucket>/projet-cadres-lycees/`, et l'adresse du serveur est lue par s3fs dans `AWS_ENDPOINT_URL`, que le SSPCloud définit aussi ;
-- sinon dans le dossier local `data/`, avec un avertissement (c'est le cas d'un compte qui n'a pas défini `BUCKET_S3`).
+- sur le S3 du SSPCloud si les variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` et `BUCKET_S3` sont définies. Les deux premières le sont déjà sur un service SSPCloud ; le nom du bucket se donne avec `export BUCKET_S3=<nom du bucket>`, avant de lancer Jupyter. Les fichiers sont alors dans `s3://<bucket>/projet-cadres-lycees/` ;
+- sinon dans le dossier local `data/`, avec un simple avertissement.
 
 ### Copies gelées des données
 
-Les sources qui changent sans prévenir sont lues dans une copie datée, jamais directement à leur API. Chaque copie est cherchée dans la release GitHub [`donnees-20261020`](https://github.com/fogatogl/projet_DS_2A/releases/tag/donnees-20261020) de ce dépôt, puis, en secours, dans la même release du [dépôt d'origine du projet](https://github.com/fogatogl/DataScience/releases/tag/donnees-20261020). Le code échoue si aucune des deux ne fournit un fichier au `sha256` attendu, et il recontrôle le `sha256` à chaque lecture d'une copie déjà téléchargée.
+Certaines sources changent sans prévenir, comme l'annuaire de l'éducation, mis à jour chaque jour. Nous les avons téléchargées une fois et publiées dans la release GitHub [`donnees-20261020`](https://github.com/fogatogl/projet_DS_2A/releases/tag/donnees-20261020) de ce dépôt. Le rapport lit ces copies et vérifie à chaque lecture que leur empreinte `sha256` n'a pas changé.
 
 | Copie | Date | Origine | `sha256` |
 |---|---|---|---|
@@ -106,9 +103,9 @@ Les sources qui changent sans prévenir sont lues dans une copie datée, jamais 
 | `contours_aav_<code>_20261013.parquet` | 13/10/2026 | `cartiflette==0.4.0`, contours des communes et arrondissements par aire, COG 2025, sans simplification | `002` : `5fc255ef5f92c540c5037f793c15c24007642c7cdce256a1e4f47d516176f231`<br>`004` : `6ff1e4bc0675ab567b7af3eb506774c0740ab855c5f333c66ee6b8fe1eb89982`<br>`005` : `c42afd4910a9a6907c54e2f8d476b8a4b6db3630bf9ffdff7b41cedf8a3b2c6e`<br>`006` : `6e0cb9a94a69887fd123a2d57c49068aa25b207da9541813652c00f1b2930c28`<br>`008` : `54665ed725b9ae364166d6dc76cd09b71b8e42397916e6fe564d8f0308786e59`<br>`010` : `454d27768198bb48be5882987f3aa36f88902add34bf443dff0cd37cc8be7790`<br>`013` : `c846f8d895d3121435037f5c04054a9e2275bb95e2de1791cae61498550b4cec`<br>`014` : `a1d13c20cc9565de3e2b3bb78b8d020076bae7c2a94ac2648d7aa96aa0699357` |
 | `contours_iris_<code>_20261021.parquet` | 21/10/2026 | `cartiflette==0.4.0`, contours des IRIS par aire retenue, COG 2025, sans simplification | `008` : `61e52233fcdd7fe09d0f0350b6a5060719ca83f0a56c7710848a5ae35d34ff23`<br>`002` : `5c77cb03f2cfb55e3e2634218f4f94b6b43f13ed1496e85572919dc271b43018`<br>`010` : `15b57329479d4261de4a443b9b4458332f92692b286caecbb270a3b678aad82c` |
 
-Les fichiers de l'Insee (zonage en aires d'attraction, série historique du recensement 2022, série historique des actifs de 25 à 54 ans par CSP de 1968 à 2022, bases IRIS « Activité des résidents » 2011 et 2022, table de passage des codes communes) sont permanents : ils sont lus à leur URL d'origine, puis, si l'Insee coupe le téléchargement, dans la release de ce dépôt, avec le même contrôle du `sha256` (voir `src/cadres_lycees/config.py`).
+Les fichiers de l'Insee (aires d'attraction des villes, recensement, table de passage des codes communes) ne changent pas. Ils sont lus à leur adresse d'origine et, si le site de l'Insee ne répond pas, dans la même release, avec le même contrôle du `sha256` (adresses dans `src/cadres_lycees/config.py`).
 
-**Refaire un gel** (seulement si le groupe décide de changer de copie, à journaliser au plan) :
+**Refaire un gel** (seulement pour changer de copie) :
 
 ```python
 from cadres_lycees import collecte
@@ -140,28 +137,38 @@ collecte.geler_contours(
 )
 ```
 
-Ces fonctions refusent d'écraser un chemin existant. Il faut ensuite reporter le chemin et le `sha256` dans `config.py`, publier le fichier sur les deux releases ci-dessus et mettre à jour ce tableau.
+Ces fonctions refusent d'écraser un fichier existant. Il faut ensuite reporter le chemin et le `sha256` dans `config.py`, publier le fichier sur la release ci-dessus et mettre à jour ce tableau.
 
 ## Usage de l'IA générative
 
-Le projet a été mené avec un assistant de code, Claude Code (Anthropic). Voici son rôle, aussi précisément que possible.
+Nous avons utilisé un assistant de code (Claude Code, d'Anthropic) pour accélérer le projet, dans un cadre fixé dès le départ : l'assistant exécutait des étapes dont nous avions défini la méthode, et rien n'était intégré sans notre relecture.
 
-**Code.** L'assistant a écrit l'essentiel du code de `src/`, des tests et des cellules du notebook, ticket par ticket, sous la direction de Giulio, qui validait chaque ticket avant qu'il soit codé. Les commits de ce code sont au nom de Giulio. Des règles écrites (`CLAUDE.md`) et des contrôles automatiques encadraient l'assistant : pas d'URL en dur hors de `config.py`, pas de modification du plan sans validation, budget de tests limité. [À compléter par le groupe : ce que chaque membre a écrit, relu ou corrigé lui-même, avec les pull requests correspondantes.]
+**Ce qui vient du groupe.** La question de recherche, les hypothèses, le choix des trois aires, l'organisation de la base de données, la méthode (paires de communes contiguës, anneaux de distance, bootstrap par commune, régression de H3, choix des contrôles et des mauvais contrôles) et l'interprétation des résultats. Ces choix ont été affinés au fil des premières analyses, en revenant aux données et à leurs limites.
 
-**Agents.** L'assistant a fait appel à des agents spécialisés, dont les noms apparaissent dans le journal des décisions (`docs/PLAN.md`, §13) : des explorateurs de données, un relecteur et un auditeur méthodologique, qui relisaient le code et la méthode en fin de ticket ; un « pilote », qui proposait des amendements au plan ; un « correcteur », qui évaluait le projet selon la grille du cours et discutait les propositions du pilote. Les lignes du journal signées « pilote, validé par Giulio » sont des propositions de cet agent acceptées par Giulio.
+**Comment l'assistant était encadré.** Nous lui avons donné des règles écrites :
 
-**Décisions.** La question, les hypothèses, le choix des trois aires et les règles de verdict ont été fixés avant les résultats, du 13 au 21/10 : par le groupe, ou proposés par le pilote et validés un à un par Giulio (lignes « pilote, validé par Giulio » du journal). Le 03/11, le groupe a délégué à l'assistant la validation des amendements suivants, pour le laisser avancer avant une relecture finale : les lignes signées « délégation du 03/11 » ont été proposées par le pilote, discutées avec le correcteur et appliquées sans validation ligne par ligne. Elles sont datées et justifiées une à une, et aucune ne change une règle de verdict. [À compléter par le groupe : la date de leur relecture et les décisions que le groupe a modifiées ou refusées.]
+- il ne codait qu'une étape à la fois, après que nous lui avions donné la méthode à suivre et la structure attendue, et il résumait ce qu'il allait faire avant de le faire ;
+- il ne pouvait pas avancer sans que nous soyons à jour de ce qu'il avait fait : chaque étape était relue et ses sorties vérifiées avant de passer à la suivante ;
+- il ne devait rien ajouter qui n'ait été demandé (fonctions, tests ou documents superflus), ni modifier du code hors de l'étape en cours ;
+- toutes les constantes vont dans `config.py`, et une assertion vérifie le résultat de chaque jointure ou filtre qui peut perdre des lignes.
 
-**Texte du rapport.** L'assistant a rédigé un premier jet du texte, à la demande de Giulio et à partir des sorties du notebook ; le groupe doit le relire et le reprendre section par section (journal du 03/11). C'est un écart à notre règle de départ (`docs/PLAN.md`, §8.3), qui réservait le texte au groupe. L'écart est consigné au journal du 03/11 (« Premier jet du texte du rapport »). [À compléter par le groupe : ce qui a été réécrit, et par qui.]
+Ces règles et des contrôles automatiques (ruff, tests) faisaient partie de notre environnement de travail.
 
-**Soutenance.** La présentation interactive (`presentation/`) a été générée par l'assistant, puis resserrée le 04/11 après la relecture du correcteur ; ses chiffres sont recalculés par `presentation/construire.py` avec les fonctions du projet, aucun n'est écrit à la main. [À compléter par le groupe : ce que le groupe y a modifié.]
+**Pipeline et analyses** (`src/cadres_lycees/`). L'architecture du pipeline et la méthode de chaque étape viennent du groupe. L'assistant a écrit le code des parties mécaniques une fois ces choix faits : par exemple les jointures une fois l'organisation de la base décidée, ou le calcul des distances une fois la méthode des paires choisie. Chaque fonction a été relue et ses résultats contrôlés par le groupe.
 
-**Ce que nous garantissons.** Chaque membre peut expliquer le code du dépôt, en particulier `accessibilite.py` et les modules d'analyse (`analyse.py`, `h1.py`, `h3.py`, `robustesse.py`), et chaque chiffre du rapport vient d'une sortie du notebook. [À confirmer par le groupe.]
+**Tests, figures, cartes interactives, site Quarto et présentation.** Nous avons décidé ce que chaque figure devait montrer et quels calculs méritaient un test. L'assistant a écrit le code, en particulier pour Quarto et les cartes interactives, que nous ne connaissions pas ; nous avons relu ce code et ajusté le rendu.
+
+**Recherche des sources.** Nous avons cherché les données nous-mêmes, puis demandé à l'assistant d'autres sources possibles ; nous avons vérifié et retenu chaque source.
+
+**Texte du rapport.** Rédigé ensemble, puis relu avec l'assistant pour le clarifier et alléger le style. Chaque passe a été relue par nous, et les interprétations sont les nôtres.
+
+**Répartition du travail.** Solal : construction et nettoyage de la base de données. Gabriel : méthodologie d'analyse. Giulio : rédaction du rapport et visualisations, avec une aide sur les autres parties. Chacun a ensuite relu l'ensemble du projet, et chacun peut expliquer le code.
+
+**Historique Git.** Nous avons d'abord travaillé dans d'autres dépôts, où les versions des branches se sont mélangées. Nous avons repris le projet dans ce dépôt, créé le 08/11/2026, en demandant à l'assistant d'y transférer le travail déjà fait. C'est lui qui a recréé l'historique, et une partie des commits a été faite directement par l'assistant. Les dates et les auteurs des commits ne correspondent donc ni au moment où chaque étape a été faite, ni à la personne qui l'a faite : la répartition réelle du travail est celle décrite plus haut.
 
 ## Organisation
 
-- `src/cadres_lycees/` : le code du pipeline, un module par étape (voir PLAN §7).
+- `src/cadres_lycees/` : le code du pipeline, un module par étape, et le tableau de support du choix des aires (`tableau_support.md`).
 - `presentation/` : la présentation interactive de soutenance, un gabarit HTML et JavaScript (`page.html`) et le script qui y insère les données et les résultats (`construire.py`).
 - `tests/` : les tests des calculs critiques (accessibilité, paires de communes contiguës, fusion des anneaux, bootstrap par commune, sens des paires, verdicts de H1 et de H3).
-- `docs/` : le plan, les notes sur les sources de données et le [dictionnaire des variables](docs/dictionnaire_variables.md) de la base communale (`pipeline.construire_base`).
-- `CLAUDE.md` et `.claude/` : les règles écrites pour l'assistant de code (conventions, ce qu'il ne doit pas modifier), la définition de ses agents (explorateur de données, testeur, relecteur, auditeur méthodologique, pilote, correcteur) et les contrôles automatiques qui encadraient son travail (section « Usage de l'IA générative »).
+- `docs/` : le [dictionnaire des variables](docs/dictionnaire_variables.md) de la base communale (`pipeline.construire_base`).

@@ -1,4 +1,4 @@
-"""Constantes du projet : les choix fixés par le plan et les paramètres des sources."""
+"""Constantes du projet : les choix d'analyse et les paramètres des sources."""
 
 from pathlib import Path
 
@@ -35,7 +35,8 @@ MESURES_H4 = {
 
 CHEMIN_BASE = "final/base_communale.parquet"
 CHEMIN_PAIRES = "final/paires.parquet"
-CHEMIN_TABLEAU_SUPPORT = Path(__file__).parents[2] / "docs" / "tableau_support.md"
+# Tableau de support du choix des aires, calculé une fois sur les 8 candidates et versionné
+CHEMIN_TABLEAU_SUPPORT = Path(__file__).parent / "tableau_support.md"
 # Présentation de soutenance : gabarit versionné et page écrite dans le site Quarto
 CHEMIN_GABARIT_PRESENTATION = Path(__file__).parents[2] / "presentation" / "page.html"
 CHEMIN_PRESENTATION = Path(__file__).parents[2] / "_site" / "presentation.html"
@@ -95,10 +96,6 @@ DOSSIER_LOCAL = Path(__file__).parents[2] / "data"
 # Dépôt du projet ; sa release publie les copies gelées et, en secours, les zips de l'Insee
 URL_DEPOT = "https://github.com/fogatogl/projet_DS_2A"
 URL_COPIES_RELEASE = f"{URL_DEPOT}/releases/download/donnees-20261020/"
-# La même release sur le dépôt d'origine du projet, en secours (copies gelées seulement)
-URL_COPIES_RELEASE_SECOURS = (
-    "https://github.com/fogatogl/DataScience/releases/download/donnees-20261020/"
-)
 
 # Annuaire de l'éducation : export complet de l'API, gelé car il change chaque jour
 URL_ANNUAIRE = (

@@ -1,4 +1,4 @@
-"""Construction de la base communale et des paires de communes contiguës (étape G du plan)."""
+"""Construction de la base communale et des paires de communes contiguës."""
 
 import geopandas as gpd
 import numpy as np
@@ -76,9 +76,9 @@ def construire_base(
 
 
 def _verifier_tableau_support(base: gpd.GeoDataFrame, paires: pd.DataFrame) -> None:
-    """Vérifie que la base retrouve le support de l'exposition commité pour ses aires (§4, D).
+    """Vérifie que la base retrouve le support de l'exposition commité pour ses aires.
 
-    Le choix des aires repose sur `docs/tableau_support.md`, calculé une fois sur les 8
+    Le choix des aires repose sur `config.CHEMIN_TABLEAU_SUPPORT`, calculé une fois sur les 8
     candidates : un changement de données ou de code qui en déplacerait un compte échoue ici.
     """
     cellules = pd.concat(
@@ -115,7 +115,7 @@ def _base_sans_cadres(referentiel: gpd.GeoDataFrame, lycees: gpd.GeoDataFrame) -
         accessibilite.indicateurs(referentiel, lycees[lycees["secteur"] == "prive"], "lyc_prive"),
         accessibilite.indicateurs(referentiel, lycees[lycees["secteur"] == "public"], "lyc_public"),
         # Tous secteurs : le nombre de lycées et l'IVAL moyenne servent à H3 ; la distance
-        # au plus proche, tous secteurs confondus, n'entre dans aucune analyse du plan
+        # au plus proche, tous secteurs confondus, n'entre dans aucune analyse
         acces_tous_lycees.drop(columns="dist_lyc_min"),
         nettoyage.population(collecte.serie_historique_rp2022(), referentiel),
     ]
@@ -221,14 +221,14 @@ def ecrire_tableau_support() -> None:
     texte = "\n\n".join(
         [
             "# Tableau de support du choix des aires\n\nÉcrit par "
-            "`pipeline.ecrire_tableau_support()` (PLAN §2.2, §5.2), avant le choix des aires et "
-            "sans aucune donnée sur les cadres. Les règles de fusion des anneaux et la borne "
-            "d'équilibre sont celles de l'amendement A6.",
+            "`pipeline.ecrire_tableau_support()`, avant le choix des aires et sans aucune donnée "
+            "sur les cadres. Les règles de fusion des anneaux et la borne d'équilibre sont "
+            "celles de la section 4.2 du rapport.",
             "## Critères (a) à (d) et frontière (f)",
             criteres.to_markdown(),
             "Critère (f), faisabilité : la part de cadres des arrondissements de Lyon vient du "
             "même fichier et avec la même définition que celle des autres communes ; le coût de "
-            "Lyon est nul pour la variable à expliquer (amendement A11).",
+            "Lyon est nul pour la variable à expliquer.",
             "## Support de l'exposition (critère e), à 5 et 10 km",
             support.to_markdown(index=False),
             "## Cellules après fusion des anneaux",

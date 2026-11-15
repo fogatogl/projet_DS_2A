@@ -1,6 +1,6 @@
 # Tableau de support du choix des aires
 
-Écrit par `pipeline.ecrire_tableau_support()` (PLAN §2.2, §5.2), avant le choix des aires et sans aucune donnée sur les cadres. Les règles de fusion des anneaux et la borne d'équilibre sont celles de l'amendement A6.
+Écrit par `pipeline.ecrire_tableau_support()`, avant le choix des aires et sans aucune donnée sur les cadres. Les règles de fusion des anneaux et la borne d'équilibre sont celles de la section 4.2 du rapport.
 
 ## Critères (a) à (d) et frontière (f)
 
@@ -15,7 +15,7 @@
 | Strasbourg | False   |               0.273 |                  0.155 |        22.8 |             22 |             8 |            868665 |       33 |               9 | 55                                   |
 | Toulouse   | False   |               0.268 |                  0.151 |        15.5 |             30 |            11 |           1513396 |       41 |              11 | —                                    |
 
-Critère (f), faisabilité : la part de cadres des arrondissements de Lyon vient du même fichier et avec la même définition que celle des autres communes ; le coût de Lyon est nul pour la variable à expliquer (amendement A11).
+Critère (f), faisabilité : la part de cadres des arrondissements de Lyon vient du même fichier et avec la même définition que celle des autres communes ; le coût de Lyon est nul pour la variable à expliquer.
 
 ## Support de l'exposition (critère e), à 5 et 10 km
 

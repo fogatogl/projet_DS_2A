@@ -208,11 +208,12 @@ def estimation_h3(population: pd.DataFrame) -> pd.DataFrame:
 
 
 def verdict_h3(estimation: pd.DataFrame, fiabilite: float) -> pd.DataFrame:
-    """Renvoie le verdict de H3, toutes aires ensemble, par les règles du plan.
+    """Renvoie le verdict de H3, toutes aires ensemble, par les règles de la section 4.4 du rapport.
 
     `estimation` vient de `estimation_h3`, `fiabilite` est la valeur après Spearman-Brown de la
-    ligne « ensemble » de `fiabilite_ival`. Première règle vérifiée, dans l'ordre du plan. Une
-    ligne, `ensemble`, avec `verdict` et `fiabilite`, pour s'afficher comme `verdict_h1`.
+    ligne « ensemble » de `fiabilite_ival`. Première règle vérifiée, dans l'ordre « infirmée »,
+    « confirmée », « nuancée », « non concluante ». Une ligne, `ensemble`, avec `verdict` et
+    `fiabilite`, pour s'afficher comme `verdict_h1`.
     """
     ensemble = estimation.loc["ensemble"]
     qualite, ecart = ensemble.loc["β_q"], ensemble.loc["β_q − β_n"]
