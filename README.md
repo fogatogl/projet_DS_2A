@@ -63,13 +63,13 @@ uv run pre-commit install        # active nb-clean et ruff avant chaque commit
 uv run pytest                    # lance les tests
 ```
 
-Le rapport est `rapport.ipynb`. Ses figures et ses tableaux sont recalculés à chaque exécution à partir des données brutes. Le site se construit avec [Quarto](https://quarto.org/), déjà installé sur le SSPCloud :
+Le rapport est `rapport.ipynb`. Ses figures et ses tableaux sont recalculés à chaque exécution à partir des données brutes. Le site se construit avec [Quarto](https://quarto.org/), installé par `uv sync` (paquet `quarto-cli`, version figée dans `uv.lock`) : rien d'autre à installer.
 
 ```bash
 uv run quarto render             # exécute rapport.ipynb et écrit le site dans _site/
 ```
 
-`uv run` est nécessaire, car il donne à Quarto le Python de l'environnement du projet, où le paquet `cadres_lycees` est installé.
+`uv run` est nécessaire : il lance le Quarto de l'environnement du projet et lui donne le Python où le paquet `cadres_lycees` est installé.
 
 Sur un clone neuf, les 28 fichiers de données sont téléchargés puis gardés dans `data/`, et l'exécution complète prend environ 17 minutes. Pour exécuter le notebook sans construire le site :
 
