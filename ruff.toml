@@ -1,8 +1,7 @@
-# Règles de qualité du code. Appliquées par l'éditeur, les hooks Claude Code et le pre-commit.
+# Règles de qualité du code, appliquées par l'éditeur et le pre-commit.
 # Cette configuration vit ici et non dans pyproject.toml (ruff.toml est prioritaire).
 line-length = 100
 target-version = "py313"
-extend-exclude = ["notebooks/exploration"]
 
 [lint]
 select = [
@@ -14,8 +13,8 @@ select = [
     "RET",          # retours incohérents
     "ARG",          # arguments inutilisés
     "N",            # conventions de nommage
-    "ANN",          # annotations de type (PLAN §8.2)
-    "D",            # docstrings (PLAN §8.2)
+    "ANN",          # annotations de type
+    "D",            # docstrings
     "BLE",          # except Exception trop large
     "S110",         # try/except/pass qui avale une erreur
     "ERA",          # code commenté laissé en place
@@ -30,7 +29,6 @@ ignore = [
 [lint.per-file-ignores]
 "tests/**" = ["D", "ANN"]
 "*.ipynb" = ["D", "ANN", "T20", "E402"]
-".claude/**" = ["T20"]
 
 [lint.pydocstyle]
 convention = "numpy"

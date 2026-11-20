@@ -1,4 +1,4 @@
-"""Tests de `accessibilite.indicateurs` sur des communes et des lycées jouets (PLAN §2.4, §4 D).
+"""Tests de `accessibilite.indicateurs` sur des communes et des lycées jouets.
 
 Coordonnées en mètres, en Lambert 93, décalées d'une origine proche de Rennes : chaque
 distance attendue se calcule de tête.
@@ -68,7 +68,7 @@ def test_distance_depuis_le_centroide_et_non_le_contour():
     """Le point de référence est la colonne `centroide`, ni le contour ni un centre recalculé.
 
     Le centroïde fourni (0, 0) n'est pas le centre du rectangle, (2 000, 0) : c'est le cas du
-    chef-lieu en robustesse (§2.4). Le lycée est sur le bord est du contour.
+    chef-lieu en robustesse. Le lycée est sur le bord est du contour.
     """
     communes = communes_jouets([("A", rectangle(-3000, -1000, 7000, 1000), point(0, 0))])
 
@@ -111,7 +111,7 @@ def test_plusieurs_communes_dont_une_sans_lycee():
 def test_coordonnees_en_degres_refusees():
     """Des lycées ou des centroïdes en WGS84 donneraient des distances en degrés, sans signal.
 
-    Le second cas est celui du chef-lieu en robustesse (§2.4) : seule la colonne `centroide`
+    Le second cas est celui du chef-lieu en robustesse : seule la colonne `centroide`
     est en degrés, les contours restent en Lambert 93.
     """
     lycees_wgs84 = lycees((0, 4000)).to_crs(config.CRS_CARTES)
