@@ -14,10 +14,10 @@ from cadres_lycees import config, stockage
 
 
 def _copies_publiques(chemin: str) -> list[str]:
-    """Renvoie les URL publiques d'une copie gelée : la release du dépôt, puis celle du groupe.
+    """Renvoie les URL publiques d'une copie gelée : la release du dépôt, puis celle d'origine.
 
-    Les deux releases portent les mêmes fichiers ; le `sha256` est contrôlé quelle que soit
-    l'origine.
+    Les deux releases portent les mêmes copies gelées ; celle du dépôt porte aussi les zips de
+    l'Insee, en secours de leur URL d'origine. Le `sha256` est contrôlé quelle que soit l'origine.
     """
     nom = chemin.removeprefix("raw/")
     return [config.URL_COPIES_RELEASE + nom, config.URL_COPIES_RELEASE_SECOURS + nom]
@@ -213,7 +213,11 @@ def aav_2020() -> pd.DataFrame:
     zéro en entier. Lyon, Marseille et Paris n'y figurent que par leur commune parente, pas par
     leurs arrondissements. Le zip de l'Insee est permanent : il est lu à son URL d'origine.
     """
-    contenu = stockage.copie_controlee([config.URL_AAV], config.CHEMIN_RAW_AAV, config.SHA256_AAV)
+    contenu = stockage.copie_controlee(
+        [config.URL_AAV, *_copies_publiques(config.CHEMIN_RAW_AAV)],
+        config.CHEMIN_RAW_AAV,
+        config.SHA256_AAV,
+    )
     with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
         classeur = io.BytesIO(archive.read(config.XLSX_AAV))
     aav = pd.read_excel(
@@ -241,7 +245,9 @@ def serie_historique_rp2022() -> pd.DataFrame:
     ces villes deux fois. Le zip de l'Insee est permanent : il est lu à son URL d'origine.
     """
     contenu = stockage.copie_controlee(
-        [config.URL_SERIE_RP2022], config.CHEMIN_RAW_SERIE_RP2022, config.SHA256_SERIE_RP2022
+        [config.URL_SERIE_RP2022, *_copies_publiques(config.CHEMIN_RAW_SERIE_RP2022)],
+        config.CHEMIN_RAW_SERIE_RP2022,
+        config.SHA256_SERIE_RP2022,
     )
     with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
         csv = io.BytesIO(archive.read(config.CSV_SERIE_RP2022))
@@ -268,7 +274,7 @@ def evol_struct_rp2022() -> pd.DataFrame:
     fois. Le zip de l'Insee est permanent : il est lu à son URL d'origine.
     """
     contenu = stockage.copie_controlee(
-        [config.URL_EVOL_STRUCT_RP2022],
+        [config.URL_EVOL_STRUCT_RP2022, *_copies_publiques(config.CHEMIN_RAW_EVOL_STRUCT_RP2022)],
         config.CHEMIN_RAW_EVOL_STRUCT_RP2022,
         config.SHA256_EVOL_STRUCT_RP2022,
     )
@@ -367,7 +373,7 @@ def activite_iris_2022() -> pd.DataFrame:
     Effectifs décimaux (exploitation complémentaire). À Lyon, `COM` donne l'arrondissement.
     """
     contenu = stockage.copie_controlee(
-        [config.URL_ACTIVITE_IRIS_2022],
+        [config.URL_ACTIVITE_IRIS_2022, *_copies_publiques(config.CHEMIN_RAW_ACTIVITE_IRIS_2022)],
         config.CHEMIN_RAW_ACTIVITE_IRIS_2022,
         config.SHA256_ACTIVITE_IRIS_2022,
     )
@@ -391,7 +397,7 @@ def activite_iris_2011() -> pd.DataFrame:
     codes, puis les effectifs sont convertis en nombres.
     """
     contenu = stockage.copie_controlee(
-        [config.URL_ACTIVITE_IRIS_2011],
+        [config.URL_ACTIVITE_IRIS_2011, *_copies_publiques(config.CHEMIN_RAW_ACTIVITE_IRIS_2011)],
         config.CHEMIN_RAW_ACTIVITE_IRIS_2011,
         config.SHA256_ACTIVITE_IRIS_2011,
     )
@@ -423,7 +429,9 @@ def passage_communes() -> pd.DataFrame:
     paires uniques des colonnes utiles avant de compter.
     """
     contenu = stockage.copie_controlee(
-        [config.URL_PASSAGE_COG], config.CHEMIN_RAW_PASSAGE_COG, config.SHA256_PASSAGE_COG
+        [config.URL_PASSAGE_COG, *_copies_publiques(config.CHEMIN_RAW_PASSAGE_COG)],
+        config.CHEMIN_RAW_PASSAGE_COG,
+        config.SHA256_PASSAGE_COG,
     )
     with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
         xlsx = io.BytesIO(archive.read(config.XLSX_PASSAGE_COG))
@@ -451,7 +459,9 @@ def serie_csp_2554(annee: int) -> pd.DataFrame:
     est permanent : il est lu à son URL d'origine.
     """
     contenu = stockage.copie_controlee(
-        [config.URL_SERIE_CSP], config.CHEMIN_RAW_SERIE_CSP, config.SHA256_SERIE_CSP
+        [config.URL_SERIE_CSP, *_copies_publiques(config.CHEMIN_RAW_SERIE_CSP)],
+        config.CHEMIN_RAW_SERIE_CSP,
+        config.SHA256_SERIE_CSP,
     )
     with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
         classeur = io.BytesIO(archive.read(config.XLSX_SERIE_CSP))

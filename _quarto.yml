@@ -19,8 +19,8 @@ crossref:
 
 website:
   title: "Lycées et géographie des cadres"
-  # Publié sur la fork fogatogl/DataScience par `quarto publish gh-pages` (README, « Voir les résultats »)
-  site-url: https://fogatogl.github.io/DataScience/
+  # Publié sur la branche gh-pages du dépôt par `quarto publish gh-pages` (README, « Voir les résultats »)
+  site-url: https://fogatogl.github.io/projet_DS_2A/
   navbar:
     left:
       # Page écrite dans _site/ par presentation/construire.py, après le rendu
@@ -28,7 +28,7 @@ website:
         href: presentation.html
     right:
       - icon: github
-        href: https://github.com/fogatogl/DataScience
+        href: https://github.com/fogatogl/projet_DS_2A
         aria-label: Dépôt du projet
 
 format:
