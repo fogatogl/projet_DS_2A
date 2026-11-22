@@ -7,9 +7,6 @@ _site/
 .ruff_cache/
 .pytest_cache/
 
-# Réglages personnels de Claude Code
-.claude/settings.local.json
-CLAUDE.local.md
 __pycache__/
 *.pyc
 

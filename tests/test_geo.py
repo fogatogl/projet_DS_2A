@@ -1,4 +1,4 @@
-"""Tests de `geo.paires_contigues` sur des communes jouets (PLAN §4 F, §5.3).
+"""Tests de `geo.paires_contigues` sur des communes jouets.
 
 Communes carrées de 1 km de côté sur une grille en Lambert 93, décalée d'une origine proche
 de Rennes : chaque contact se voit sur un dessin.

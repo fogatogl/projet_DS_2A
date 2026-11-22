@@ -328,7 +328,7 @@ def _concordent(a: pd.Series, b: pd.Series) -> bool:
 def verdict_h1(
     principale: pd.DataFrame, secondaire: pd.DataFrame, anneaux: pd.DataFrame
 ) -> pd.DataFrame:
-    """Renvoie le verdict de H1 dans chaque aire, par les règles du plan.
+    """Renvoie le verdict de H1 dans chaque aire, par les règles de la section 4.2 du rapport.
 
     `principale` et `secondaire` viennent de `pentes_paires_par_aire` sur `d_dist_lyc_prive_min`
     et `d_n_lyc_prive_5km`, `anneaux` de `ecarts_anneaux`. Sens de H1 : pente principale

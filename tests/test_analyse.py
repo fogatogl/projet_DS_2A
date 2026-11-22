@@ -1,11 +1,12 @@
-"""Tests des calculs d'analyse du PLAN §7, sur des données jouets calculables à la main.
+"""Tests des calculs d'analyse, sur des données jouets calculables à la main.
 
-Fusion des anneaux (`h1.cellules_anneaux`, §5.2, A6), poids du bootstrap par commune
-(`h1.poids_bootstrap`, §5.3), invariance de la pente des paires au sens i − j
-(`h1.pente_paires`, §5.3) et verdict de H1 (`h1.verdict_h1`, §5.3, A4, A13).
-Module `h3` : verdict de H3 (`h3.verdict_h3`, §5.5), avec le seuil de fiabilité de l'IVAL (§3.2).
+Fusion des anneaux (`h1.cellules_anneaux`), poids du bootstrap par commune
+(`h1.poids_bootstrap`), invariance de la pente des paires au sens i − j
+(`h1.pente_paires`) et verdict de H1 (`h1.verdict_h1`).
+Module `h3` : verdict de H3 (`h3.verdict_h3`), avec le seuil de fiabilité de l'IVAL.
 
-Fusion des anneaux : attendus calculés à la main avec les règles fixées par A6 : anneaux de départ
+Fusion des anneaux : attendus calculés à la main avec les règles de la section 4.2 du rapport :
+anneaux de départ
 `config.ANNEAUX_KM` (0, 5, 10, 20, 30 km), au moins `config.EFFECTIF_MIN_GROUPE` (15) communes
 exposées et 15 non exposées par cellule, écart des distances moyennes au centre d'au plus
 `config.ECART_DIST_MAX_KM` (2 km).
@@ -45,7 +46,7 @@ def groupe(aire: str, distance: float, exposees: int = 0, non_exposees: int = 0)
 
 
 def test_fusion_des_anneaux_puis_equilibre() -> None:
-    """Fusions dans l'ordre du plan, équilibre vérifié après fusion, aire non estimable.
+    """Fusions successives des anneaux, équilibre vérifié après fusion, aire non estimable.
 
     Aire A, anneaux de départ (exposées, non exposées ; total) :
     [0, 5) (15, 15 ; 30), [5, 10) (1, 0 ; 1), [10, 20) (25, 5 ; 30), [20, 30) (0, 5 ; 5),
@@ -99,7 +100,7 @@ def test_fusion_des_anneaux_puis_equilibre() -> None:
 
 
 def test_poids_bootstrap_produit_des_tirages() -> None:
-    """Le poids d'une paire est le produit des tirages de ses deux communes (§5.3).
+    """Le poids d'une paire est le produit des tirages de ses deux communes.
 
     Tirage : 44001 deux fois, 44002 zéro, 44003 une fois, 44004 trois fois. Une somme donnerait
     2, 3, 5 et 4 : seul le produit annule une paire dont une commune n'est pas tirée.
@@ -134,7 +135,7 @@ def test_poids_bootstrap_produit_des_tirages() -> None:
 
 
 def test_pente_paires_invariante_au_sens_i_j() -> None:
-    """Pente connue, inchangée quand on inverse le sens de paires, avec ou sans poids (§5.3, A6).
+    """Pente connue, inchangée quand on inverse le sens de paires, avec ou sans poids.
 
     Inverser une paire multiplie toute sa ligne par −1 (écart de part de cadres et régresseurs) :
     sans constante, X'X et X'y ne changent pas, puisque (−1)² = 1. Avec une constante, la colonne
@@ -175,7 +176,7 @@ def test_pente_paires_invariante_au_sens_i_j() -> None:
     assert h1.pente_paires(paires, acces) == pytest.approx(2)
     assert h1.pente_paires(retournees, acces) == pytest.approx(2)
 
-    # Poids comme des produits de tirages : un poids k compte la paire k fois (§5.3), 0 la retire.
+    # Poids comme des produits de tirages : un poids k compte la paire k fois, 0 la retire.
     # Pente des paires dupliquées : 5,77. Des poids ignorés donneraient 2, des poids élevés au
     # carré 6,85, des poids lus par position et non par index dans `retournees` 2,67.
     poids = pd.Series([2, 0, 1, 3, 1, 2], index=paires.index)
@@ -206,7 +207,7 @@ def cellule(
 
 
 def test_verdict_h1_anneaux_compares_et_contradictions() -> None:
-    """Verdict de H1 sur sept aires jouets, une règle du §5.3 (A4, A13) chacune.
+    """Verdict de H1 sur sept aires jouets, une règle de verdict chacune.
 
     Anneaux d'origine : [0, 5), [5, 10), [10, 20), [20, 30), [30, inf). Sens de H1 : pente
     principale négative, pente secondaire et écarts des cellules positifs.
@@ -369,8 +370,8 @@ NON_RAPPORTE = (math.nan, math.nan)
 def test_verdict_h3_seuil_et_regles(
     fiabilite: float, ic_q: tuple, ic_ecart: tuple, ecartes: int, attendu: str
 ) -> None:
-    """Verdict de H3 sur la seule portée « ensemble » (§5.5) : « non testable avec cette mesure »
-    sous le seuil de fiabilité de l'IVAL (§3.2), puis la première règle vérifiée parmi
+    """Verdict de H3 sur la seule portée « ensemble » : « non testable avec cette mesure »
+    sous le seuil de fiabilité de l'IVAL, puis la première règle vérifiée parmi
     « infirmée », « confirmée », « nuancée », « non concluante ».
 
     L'aire, descriptive, a β_q et β_q − β_n sous zéro : la lire, ou combiner toutes les portées,

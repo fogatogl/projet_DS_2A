@@ -57,11 +57,10 @@ def fig_aires(
     charte.habiller(
         fig,
         titre,
-        "Lycées généraux, technologiques et polyvalents des communes de l'aire (annuaire du "
-        f"{config.DATE_ANNUAIRE}). Candidats : présents au bac 2012-2022 des "
-        f"{profil['n_avec_candidats'].sum()} lycées sur {profil['n_lycees'].sum()} qui ont une "
-        f"IVAL. IPS : voie générale et technologique, rentrée {config.RENTREE_IPS}. Sources : "
-        "annuaire de l'éducation, DEPP, Insee, IGN.",
+        f"{profil['n_lycees'].sum()} lycées généraux, technologiques et polyvalents. Candidats : "
+        f"élèves présents au bac de 2012 à 2022 (connus pour {profil['n_avec_candidats'].sum()} "
+        f"lycées). IPS de la rentrée {config.RENTREE_IPS}. Sources : Éducation nationale, DEPP, "
+        "Insee, IGN.",
     )
     return fig
 
